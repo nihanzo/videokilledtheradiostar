@@ -26,8 +26,10 @@ free on **GitHub Pages** and edited without a build step.
 ✅ Full single-page site scaffolded and styled. Renders and is interactive.
 ✅ All content is **placeholder** and clearly marked for swap-in.
 ✅ Local git repo initialized; GitHub CLI (`gh`) authenticated as `nihanzo`.
-⬜ Real content (videos, bio, photo, links) — **owner will provide later.**
-⬜ Pushed to GitHub / deployed to Pages — **not done yet** (see §7, §8).
+✅ Pushed to GitHub — **public** repo `nihanzo/videokilledtheradiostar`.
+✅ Deployed to **GitHub Pages** — live at https://nihanzo.github.io/videokilledtheradiostar/
+✅ Pages deploys from `main`, so **every push auto-redeploys** the live site (~1 min).
+⬜ Real content (videos, bio, photo, links) — **owner will provide** (the main remaining work).
 
 ## 4. Tech stack & file structure
 Plain HTML + CSS + vanilla JS. No framework, no build, no npm.
@@ -77,19 +79,19 @@ Everything a non-developer needs to replace, and exactly where:
 | **Social links** | footer `.footer__social` | Replace `#` hrefs. |
 | **Contact form delivery** | `#contactForm` | Currently front-end only. Wire to Formspree/Getform (set `action` + `method="POST"`) or a serverless function to actually receive messages. |
 
-## 7. Deployment plan (GitHub Pages)
-GitHub CLI is already authenticated as **nihanzo**. To publish:
+## 7. Deployment (GitHub Pages) — DONE ✅
+- **Repo:** `nihanzo/videokilledtheradiostar` (public), remote `origin`.
+- **Pages source:** branch `main`, path `/` (deploy-from-branch).
+- **Live URL:** https://nihanzo.github.io/videokilledtheradiostar/
+- **Auto-deploy:** every push to `main` rebuilds and republishes automatically (~1 min).
+
+Day-to-day publish loop:
 ```bash
 cd ~/Downloads/nihanzo
-git add -A && git commit -m "Initial portfolio scaffold"
-gh repo create nihanzo-portfolio --public --source=. --remote=origin --push
-# Enable Pages (serve from main branch root):
-gh api -X POST repos/nihanzo/nihanzo-portfolio/pages -f source[branch]=main -f source[path]=/ 2>/dev/null || \
-  echo "Enable Pages in repo Settings → Pages → Deploy from branch → main → /(root)"
+git add -A && git commit -m "your message" && git push
+# ~1 min later the live site updates itself
 ```
-Site will be at `https://nihanzo.github.io/nihanzo-portfolio/`. (A custom domain
-can be added later in Settings → Pages.) **Note:** creating a public repo
-publishes the code — confirm with the owner before running this.
+A custom domain can be added later in Settings → Pages.
 
 ## 8. Roadmap / suggested next steps
 1. **Owner provides content** → do the swaps in §6.
@@ -99,8 +101,8 @@ publishes the code — confirm with the owner before running this.
 4. **SEO/meta** → fill in the Open Graph image + real description in `<head>`.
 5. **Optional polish:** per-project detail pages or a lightbox gallery; a
    testimonials section; a downloadable résumé/rate card.
-6. **Deploy** → push + enable Pages (§7). Optionally add a GitHub Action to
-   deploy automatically on push.
+6. **Deploy** → ✅ already live (§7); pushes auto-redeploy. Optional later: a
+   custom domain, or a GitHub Action if the build ever needs extra steps.
 
 ## 9. Constraints & preferences captured so far
 - Owner wants to **learn the workflow** (how to build/iterate with Claude),
