@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>nihanzo — Video Editor & Colorist</title>
+  <meta name="description" content="Portfolio of nihanzo — video editing, color grading, and motion graphics for brands, artists, and filmmakers." />
+
+  <!-- Open Graph / social preview (swap the url + image when you have them) -->
+  <meta property="og:title" content="nihanzo — Video Editor & Colorist" />
+  <meta property="og:description" content="Editing, color, and motion for brands, artists, and filmmakers." />
+  <meta property="og:type" content="website" />
+
+  <!-- Inline SVG favicon: a little play button -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230a0a0c'/%3E%3Cpath d='M40 32 L70 50 L40 68 Z' fill='%23ff6b3d'/%3E%3C/svg%3E" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Film-grain overlay across the whole page -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a href="#top" class="brand" aria-label="nihanzo home">
+        <span class="brand__mark" aria-hidden="true"></span>
+        nihanzo
+      </a>
+
+      <nav class="nav__links" id="navLinks" aria-label="Primary">
+        <a href="#work">Work</a>
+        <a href="#about">About</a>
+        <a href="#services">Services</a>
+        <a href="#contact" class="nav__cta">Let's talk</a>
+      </nav>
+
+      <button class="nav__toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ============ HERO / SHOWREEL ============ -->
+    <section class="hero" id="hero">
+      <div class="hero__bg" aria-hidden="true">
+        <span class="glow glow--warm"></span>
+        <span class="glow glow--cool"></span>
+      </div>
+
+      <div class="container hero__inner">
+        <p class="eyebrow reveal">Video Editor &amp; Colorist</p>
+        <h1 class="hero__title reveal">
+          Stories, cut<br />to <span class="grad">keep people watching.</span>
+        </h1>
+        <p class="hero__sub reveal">
+          Editing, color, and motion for brands, artists, and filmmakers.
+          I turn raw footage into work that holds attention from the first frame.
+        </p>
+
+        <div class="hero__actions reveal">
+          <button class="btn btn--primary" data-open-reel>
+            <span class="btn__play" aria-hidden="true"></span>
+            Watch Showreel
+          </button>
+          <a href="#work" class="btn btn--ghost">View Work</a>
+        </div>
+
+        <!-- Stats — swap the numbers for your real ones -->
+        <ul class="hero__stats reveal">
+          <li><span class="stat" data-count="6" data-suffix="+">0</span><em>Years editing</em></li>
+          <li><span class="stat" data-count="250" data-suffix="+">0</span><em>Projects delivered</em></li>
+          <li><span class="stat" data-count="40" data-suffix="+">0</span><em>Happy clients</em></li>
+          <li><span class="stat" data-count="15" data-suffix="M+">0</span><em>Views generated</em></li>
+        </ul>
+      </div>
+
+      <a href="#work" class="hero__scroll" aria-label="Scroll to work">
+        <span></span>
+      </a>
+    </section>
+
+    <!-- ============ TOOLS MARQUEE ============ -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track">
+        <span>Premiere Pro</span><span>•</span><span>DaVinci Resolve</span><span>•</span>
+        <span>After Effects</span><span>•</span><span>Cinema 4D</span><span>•</span>
+        <span>Audition</span><span>•</span><span>Photoshop</span><span>•</span>
+        <span>Premiere Pro</span><span>•</span><span>DaVinci Resolve</span><span>•</span>
+        <span>After Effects</span><span>•</span><span>Cinema 4D</span><span>•</span>
+        <span>Audition</span><span>•</span><span>Photoshop</span><span>•</span>
+      </div>
+    </div>
+
+    <!-- ============ PORTFOLIO ============ -->
+    <section class="section work" id="work">
+      <div class="container">
+        <div class="section__head reveal">
+          <p class="eyebrow">Selected Work</p>
+          <h2 class="section__title">Recent projects</h2>
+          <p class="section__lead">
+            A mix of music videos, commercials, short films, and social content.
+            Click any project to play. <em>(These are placeholders — swap in your own reels.)</em>
+          </p>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters reveal" role="tablist" aria-label="Filter work">
+          <button class="filter is-active" data-filter="all">All</button>
+          <button class="filter" data-filter="music">Music Videos</button>
+          <button class="filter" data-filter="commercial">Commercial</button>
+          <button class="filter" data-filter="film">Short Film</button>
+          <button class="filter" data-filter="social">Social</button>
+        </div>
+
+        <!-- Grid. Each card is swap-ready: set data-video to a YouTube/Vimeo embed URL. -->
+        <div class="grid" id="workGrid">
+          <!-- Card 1 -->
+          <article class="card reveal" data-category="music" data-video="" data-title="Neon Nights — Official Video" style="--g1:#1b2735;--g2:#ff6b3d">
+            <button class="card__play" aria-label="Play Neon Nights"><span></span></button>
+            <div class="card__meta">
+              <span class="tag">Music Video</span>
+              <span class="dur">3:42</span>
+            </div>
+            <h3 class="card__title">Neon Nights — Official Video</h3>
+          </article>
+          <!-- Card 2 -->
+          <article class="card reveal" data-category="commercial" data-video="" data-title="Aro — Brand Film" style="--g1:#241b35;--g2:#2dd4bf">
+            <button class="card__play" aria-label="Play Aro Brand Film"><span></span></button>
+            <div class="card__meta">
+              <span class="tag">Commercial</span>
+              <span class="dur">1:15</span>
+            </div>
+            <h3 class="card__title">Aro — Brand Film</h3>
+          </article>
+          <!-- Card 3 -->
+          <article class="card reveal" data-category="film" data-video="" data-title="The Long Way Home — Short" style="--g1:#2a1f1a;--g2:#ffb347">
+            <button class="card__play" aria-label="Play The Long Way Home"><span></span></button>
+            <div class="card__meta">
+              <span class="tag">Short Film</span>
+              <span class="dur">8:04</span>
+            </div>
+            <h3 class="card__title">The Long Way Home — Short</h3>
+          </article>
+          <!-- Card 4 -->
+          <article class="card reveal" data-category="social" data-video="" data-title="Summer Drop — Campaign" style="--g1:#1a2a2a;--g2:#ff3d6e">
+            <button class="card__play" aria-label="Play Summer Drop"><span></span></button>
+            <div class="card__meta">
+              <span class="tag">Social</span>
+              <span class="dur">0:30</span>
+            </div>
+            <h3 class="card__title">Summer Drop — Campaign</h3>
+          </article>
+          <!-- Card 5 -->
+          <article class="card reveal" data-category="music" data-video="" data-title="Echoes — Lyric Video" style="--g1:#1b1b2f;--g2:#7c5cff">
+            <button class="card__play" aria-label="Play Echoes"><span></span></button>
+            <div class="card__meta">
+              <span class="tag">Music Video</span>
+              <span class="dur">4:10</span>
+            </div>
+            <h3 class="card__title">Echoes — Lyric Video</h3>
+          </article>
+          <!-- Card 6 -->
+          <article class="card reveal" data-category="commercial" data-video="" data-title="Field Notes — Product Spot" style="--g1:#20261a;--g2:#a3e635">
+            <button class="card__play" aria-label="Play Field Notes"><span></span></button>
+            <div class="card__meta">
+              <span class="tag">Commercial</span>
+              <span class="dur">0:45</span>
+            </div>
+            <h3 class="card__title">Field Notes — Product Spot</h3>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT ============ -->
+    <section class="section about" id="about">
+      <div class="container about__grid">
+        <div class="about__portrait reveal" aria-hidden="true">
+          <!-- Swap this block for your photo: <img src="assets/portrait.jpg" alt="nihanzo"> -->
+          <div class="portrait-ph"><span>Your photo</span></div>
+        </div>
+
+        <div class="about__body">
+          <p class="eyebrow reveal">About</p>
+          <h2 class="section__title reveal">Hi, I'm nihanzo — I make cuts that feel intentional.</h2>
+          <p class="reveal">
+            I'm a video editor and colorist with a love for rhythm, pacing, and story.
+            Over the past several years I've cut everything from fast-paced social ads to
+            long-form documentary, always chasing the version that makes people <em>feel</em> something.
+          </p>
+          <p class="reveal">
+            <strong>This is placeholder copy</strong> — replace it with your real story: how you got
+            started, the kind of work you love, and what clients can expect working with you.
+          </p>
+
+          <div class="about__cols reveal">
+            <div>
+              <h3 class="mini-title">What I do</h3>
+              <ul class="ticked">
+                <li>Narrative &amp; commercial editing</li>
+                <li>Color grading</li>
+                <li>Motion graphics &amp; titles</li>
+                <li>Sound design &amp; mixing</li>
+              </ul>
+            </div>
+            <div>
+              <h3 class="mini-title">Tools</h3>
+              <ul class="ticked">
+                <li>Premiere Pro</li>
+                <li>DaVinci Resolve</li>
+                <li>After Effects</li>
+                <li>Cinema 4D &amp; Audition</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SERVICES ============ -->
+    <section class="section services" id="services">
+      <div class="container">
+        <div class="section__head reveal">
+          <p class="eyebrow">Services</p>
+          <h2 class="section__title">How I can help</h2>
+          <p class="section__lead">Full-service post-production, or just the piece you need.</p>
+        </div>
+
+        <div class="svc-grid">
+          <article class="svc reveal">
+            <span class="svc__num">01</span>
+            <h3>Video Editing</h3>
+            <p>Story-first editing for films, ads, and content — pacing, structure, and rhythm that keep viewers locked in.</p>
+          </article>
+          <article class="svc reveal">
+            <span class="svc__num">02</span>
+            <h3>Color Grading</h3>
+            <p>Cinematic looks, clean matching, and mood-setting grades in DaVinci Resolve that make footage sing.</p>
+          </article>
+          <article class="svc reveal">
+            <span class="svc__num">03</span>
+            <h3>Motion &amp; VFX</h3>
+            <p>Titles, lower-thirds, kinetic type, and clean composites to elevate the finished piece.</p>
+          </article>
+          <article class="svc reveal">
+            <span class="svc__num">04</span>
+            <h3>Short-Form / Social</h3>
+            <p>Scroll-stopping vertical edits for Reels, TikTok, and Shorts — built to hook in the first second.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONTACT ============ -->
+    <section class="section contact" id="contact">
+      <div class="container contact__inner reveal">
+        <p class="eyebrow">Contact</p>
+        <h2 class="section__title">Have a project in mind?</h2>
+        <p class="section__lead">
+          Tell me about it — timelines, footage, and what you're going for.
+          I'll get back to you within a couple of days.
+        </p>
+
+        <!-- This form opens the visitor's email app (no backend needed).
+             To collect submissions on the site instead, connect a service like Formspree
+             and set the form's action to your endpoint. -->
+        <form class="contact__form" id="contactForm">
+          <div class="field">
+            <label for="cName">Name</label>
+            <input id="cName" name="name" type="text" placeholder="Your name" required />
+          </div>
+          <div class="field">
+            <label for="cEmail">Email</label>
+            <input id="cEmail" name="email" type="email" placeholder="you@email.com" required />
+          </div>
+          <div class="field field--full">
+            <label for="cMsg">Project details</label>
+            <textarea id="cMsg" name="message" rows="4" placeholder="What are you working on?" required></textarea>
+          </div>
+          <button type="submit" class="btn btn--primary">Send message</button>
+        </form>
+
+        <p class="contact__or">or email me directly at
+          <!-- Swap in your real email -->
+          <a href="mailto:hello@nihanzo.com">hello@nihanzo.com</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <a href="#top" class="brand">
+        <span class="brand__mark" aria-hidden="true"></span>
+        nihanzo
+      </a>
+      <nav class="footer__social" aria-label="Social links">
+        <!-- Swap the # for your real profile links -->
+        <a href="#" aria-label="YouTube">YouTube</a>
+        <a href="#" aria-label="Instagram">Instagram</a>
+        <a href="#" aria-label="Vimeo">Vimeo</a>
+        <a href="#" aria-label="LinkedIn">LinkedIn</a>
+      </nav>
+      <p class="footer__copy">© <span id="year">2026</span> nihanzo. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ============ VIDEO MODAL ============ -->
+  <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Video player">
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__box">
+      <button class="modal__close" data-close-modal aria-label="Close">&times;</button>
+      <div class="modal__frame" id="modalFrame">
+        <!-- JS injects the video here. With no source set yet, a placeholder shows. -->
+      </div>
+      <p class="modal__title" id="modalTitle"></p>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
