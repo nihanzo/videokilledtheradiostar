@@ -4,3 +4,6 @@
 # Editor / OS cruft
 *.log
 .vscode/
+
+# Rohmaterial (Staging) — wird NICHT veröffentlicht
+assets/raw/

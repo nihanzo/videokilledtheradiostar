@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>nihanzo — hero</title>
+
+  <!-- ============================================================
+       HERO-INTRO (Prototyp v5) — Grünkohl -> Regentropfen-Dissolve -> Kissen
+       Ablauf beim Runterscrollen (scroll-gesteuert):
+        1) Grünkohl + Titel fliegen nach links-oben raus (CCW), ohne Verblassen
+        2) verwaschener Cremeton (#F4F4E1) löst sich "Tropfen für Tropfen"
+           in horizontalen Streifen Richtung linken Rand auf
+        3) darunter erscheint das Lamellen-Kissen auf dem ganzen Bildschirm
+        4) fährt der Cursor über die Lamellen, gehen sie leicht zur Seite
+           (WebGL-Displacement / "Lupe" um den Cursor)
+       Technik: 1 Full-Screen WebGL-Canvas macht Creme + Dissolve + Kissen.
+       Fallback ohne WebGL: einfaches Bild + Crossfade.
+       ============================================================ -->
+  <style>
+    :root{ --cream:#F4F4E1; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #F4F4E1; }
+    body { font-family: system-ui, sans-serif; cursor: none; overflow-x: hidden; }
+
+    /* Startseite / Fallback-Grund dahinter */
+    .startpage{
+      position: fixed; inset: 0; z-index: 1; background: #F4F4E1;
+      display: grid; place-items: center;
+      color: #b7bda6; letter-spacing: .3em; text-transform: uppercase; font-size: .8rem;
+    }
+
+    /* WebGL-Bühne: Creme + Dissolve + Kissen (deckt alles) */
+    #gl{ position: fixed; inset: 0; z-index: 5; width: 100%; height: 100%; display: block; }
+    /* Fallback-Kissen (nur ohne WebGL sichtbar) */
+    #cushionFallback{
+      position: fixed; inset: 0; z-index: 4; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0; display: none; pointer-events: none;
+    }
+    /* ---------- Hero (Kohl + Titel als eine Einheit) ---------- */
+    .hero{
+      position: fixed; inset: 0; z-index: 40;
+      display: grid; place-items: center;
+      will-change: transform;
+    }
+    .hero__wrap{ position: relative; width: min(1150px, 94vw); }
+    .hero__kale{ width: 100%; height: auto; display: block; filter: drop-shadow(0 18px 30px rgba(0,0,0,.18)); }
+
+    /* Titel sitzt auf dem Kohl */
+    .hero__title{
+      position: absolute; left: 50%; top: 46%; transform: translate(-50%, calc(-50% - 16px));
+      display: flex; align-items: center; justify-content: center; gap: .04em;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,.45));
+    }
+    .type{
+      height: clamp(46px, 10vw, 116px); background-color: var(--cream);
+      -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+      -webkit-mask-position:center; mask-position:center;
+      -webkit-mask-size:contain; mask-size:contain;
+    }
+    .type.sinc { aspect-ratio: 1986/760; -webkit-mask-image:url("assets/img/type-sinc.svg"); mask-image:url("assets/img/type-sinc.svg"); }
+    .type.moir { aspect-ratio: 1970/760; -webkit-mask-image:url("assets/img/type-moir.svg"); mask-image:url("assets/img/type-moir.svg"); }
+    /* das freigestellte re-Kissen */
+    .re{ height: clamp(64px, 14vw, 168px); width: auto; display: block; margin: 0 .01em; align-self: center; }
+
+    /* Untertitel "video" – gleiche Schrift, kleiner, Akzentfarbe; unter dem Grünkohl */
+    .hero__subtitle{
+      position: absolute; left: 50%; top: 100%;
+      transform: translate(-50%, clamp(16px, 4vw, 48px));
+      display: flex; align-items: center; justify-content: center;
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,.4));
+    }
+    .type.video{
+      aspect-ratio: 2279/760; height: clamp(24px, 5vw, 58px);
+      background-color: #C65563;
+      -webkit-mask-image:url("assets/img/type-video.svg"); mask-image:url("assets/img/type-video.svg");
+    }
+
+    .scroll-driver{ height: 260vh; }
+
+    /* ---------- Flugzeug-Cursor (ohne Rauch) ---------- */
+    #cursor{
+      position: fixed; left: 0; top: 0; width: 34px; z-index: 9999; pointer-events: none;
+      transform: translate(-200px,-200px); will-change: transform; opacity: .96;
+    }
+    #cursor img{ width: 100%; height: auto; display: block; filter: drop-shadow(0 2px 5px rgba(0,0,0,.35)); }
+  </style>
+</head>
+<body>
+  <div class="startpage">start page</div>
+  <img id="cushionFallback" src="assets/img/luftkissen.gif" alt="Luftkissen" />
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <div class="hero" id="hero">
+    <div class="hero__wrap">
+      <img class="hero__kale" src="assets/img/kale.png" alt="Grünkohl" />
+      <div class="hero__title" id="title">
+        <span class="type sinc" role="img" aria-label="sinc."></span>
+        <img class="re" src="assets/img/re.png" alt="re" />
+        <span class="type moir" role="img" aria-label="moir"></span>
+      </div>
+      <div class="hero__subtitle">
+        <span class="type video" role="img" aria-label="video"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-driver"></div>
+
+  <div id="cursor"><img src="assets/img/cursor-jump.png" alt=""></div>
+
+  <script src="js/vendor/lenis.min.js"></script>
+  <script src="js/vendor/gsap.min.js"></script>
+  <script src="js/vendor/ScrollTrigger.min.js"></script>
+  <script>
+  /* ============ Smooth Scroll ============ */
+  const lenis = new Lenis({ lerp: 0.08, wheelMultiplier: 0.9, smoothWheel: true });
+  lenis.on('scroll', () => ScrollTrigger.update());
+  gsap.ticker.add((t) => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* gemeinsamer Scroll-Fortschritt (0..1) */
+  window.__scrollP = 0;
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const remap = (v,a,b)=>clamp((v-a)/(b-a),0,1);
+  const smooth = (t)=>t*t*(3-2*t);
+
+  ScrollTrigger.create({
+    trigger: '.scroll-driver', start: 'top top', end: 'bottom bottom', scrub: 0.5,
+    onUpdate(self){
+      const p = self.progress;
+      // Hero fliegt raus während 0..0.5
+      const h = smooth(remap(p, 0.0, 0.5));
+      gsap.set('.hero', { xPercent: -125*h, yPercent: -55*h, rotation: -42*h });
+      // Dissolve läuft während 0.12..1.0
+      window.__scrollP = remap(p, 0.12, 1.0);
+    }
+  });
+
+  /* ============ Flugzeug-Cursor + Maus-Tracking ============ */
+  const mouse = { x: 0.5, y: 0.5 };        // normalisiert, y nach oben (für WebGL)
+  (function planeCursor(){
+    const cursor = document.getElementById('cursor');
+    let mx = innerWidth/2, my = innerHeight/2, lx = mx, ly = my, angle = 0;
+    const NOSE0 = -90;   // Kopf (oben) zeigt in Bewegungsrichtung
+    addEventListener('mousemove', (e) => {
+      mx = e.clientX; my = e.clientY;
+      mouse.x = mx / innerWidth;
+      mouse.y = 1 - my / innerHeight;
+    });
+    function frame(){
+      const vx = mx - lx, vy = my - ly, speed = Math.hypot(vx, vy);
+      lx = mx; ly = my;
+      if (speed > 1.1){
+        const t = Math.atan2(vy, vx) * 180/Math.PI - NOSE0;
+        let d = ((t - angle + 540) % 360) - 180;
+        angle += d * 0.18;
+      }
+      cursor.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%) rotate(${angle}deg)`;
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  /* ============ WebGL-Bühne (Creme -> Regentropfen-Dissolve -> Kissen) ============ */
+  (function stage(){
+    const canvas = document.getElementById('gl');
+    const gl = canvas.getContext('webgl', { antialias:true, premultipliedAlpha:false });
+    if (!gl){ fallback(); return; }
+
+    const VERT = `
+      attribute vec2 aPos; varying vec2 vUv;
+      void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos,0.0,1.0); }`;
+
+    const FRAG = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform sampler2D uTex;
+      uniform vec2  uRes;      // Canvas in px
+      uniform vec2  uTexRes;   // Bild in px
+      uniform vec2  uMouse;    // 0..1, y oben
+      uniform float uProg;     // 0..1 Dissolve
+      uniform float uTime;
+      uniform float uFanStr;   // Stärke des tangentialen Auffächerns
+      uniform float uFanRad;   // Wirkradius um den Cursor
+      uniform float uCircR;    // Radius des Kissen-Kreises
+      uniform float uCircW;    // weicher Rand des Kreises
+
+      float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+      float noise(vec2 p){
+        vec2 i=floor(p), f=fract(p);
+        float a=hash(i), b=hash(i+vec2(1.,0.)), c=hash(i+vec2(0.,1.)), d=hash(i+vec2(1.,1.));
+        vec2 u=f*f*(3.-2.*f);
+        return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
+      }
+      // "cover"-Fit des Bildes auf die Canvas
+      vec2 coverUv(vec2 uv){
+        float ca=uRes.x/uRes.y, ia=uTexRes.x/uTexRes.y;
+        vec2 s = ca>ia ? vec2(1.0, ia/ca) : vec2(ca/ia, 1.0);
+        return (uv-0.5)*s+0.5;
+      }
+      void main(){
+        vec2 uv = vUv;
+
+        /* ---- Kissen: Cursor fächert die Lamellen auf, nur IM Kreis, dezent ---- */
+        vec2 cu = coverUv(uv);
+        // leichter Einzoom am Anfang, setzt sich beim Erscheinen (uProg->1)
+        cu = (cu-0.5)/mix(0.94,1.0,clamp(uProg*1.4,0.,1.)) + 0.5;
+        vec2 asp   = vec2(uRes.x/uRes.y, 1.0);
+        vec2 fromC = (uv-0.5)*asp;                 // vom Zentrum (aspektkorrigiert)
+        float dc   = length(fromC);
+        float circle = smoothstep(uCircR, uCircR-uCircW, dc); // 1 im Kissen-Kreis, 0 außerhalb
+        vec2 toM   = (uv-uMouse)*asp;
+        float dm   = length(toM);
+        float infl = smoothstep(uFanRad, 0.0, dm) * circle;  // nur nah am Cursor UND im Kreis (Lamellen)
+        vec2 dir   = dm>1e-4 ? normalize(uv-uMouse) : vec2(0.0);
+        cu -= dir * infl * uFanStr;                // radialer Bulge (wie PNG-Version), dezent
+        vec3 cushion = texture2D(uTex, cu).rgb;
+
+        /* ---- Cremeton (verwaschener Film-Look) ---- */
+        float grain = noise(uv*vec2(uRes.x,uRes.y)/2.4);
+        float vig = 1.0 - smoothstep(0.36, 1.12, length((uv-vec2(0.5,0.42))*vec2(1.1,1.0)));
+        vec3 cream = vec3(0.957,0.957,0.882);       // #F4F4E1
+        cream *= mix(0.90, 1.0, vig);
+        cream = mix(cream, cream*0.93, grain*0.35);
+        cream += smoothstep(0.75,0.0, length(uv-vec2(0.34,0.72)))*0.045; // warmes Licht o-links
+
+        /* ---- Übergang: Front wandert rechts->links, Regen prasselt herab ---- */
+        float colN = floor(uv.x*80.0);                 // schmale Tropfen-Bahnen
+        float ph   = hash(vec2(colN, 3.0));
+        float run  = fract(uv.y*2.6 - uTime*(0.9+ph*0.7) - ph*6.0);
+        float drop = smoothstep(0.0,0.12,run)*smoothstep(0.85,0.30,run); // Tropfen mit Kopf
+        float jag  = (noise(vec2(colN*1.3, uv.y*24.0 - uTime*1.6))-0.5)*0.06 + drop*0.05;
+        float front = 1.22 - uProg*2.05 + jag;         // Front: rechts(>1) -> links(<0)
+        float creamA = 1.0 - smoothstep(front-0.02, front+0.02, uv.x);  // Kissen erscheint von rechts
+        creamA = max(creamA, 1.0 - smoothstep(0.0, 0.02, uProg));       // Start: alles Creme
+
+        vec3 col = mix(cushion, cream, creamA);
+        gl_FragColor = vec4(col, 1.0);
+      }`;
+
+    function sh(type, src){
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){ console.error(gl.getShaderInfoLog(s)); }
+      return s;
+    }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(prog); gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(prog, 'aPos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    const U = {
+      tex:    gl.getUniformLocation(prog, 'uTex'),
+      res:    gl.getUniformLocation(prog, 'uRes'),
+      texRes: gl.getUniformLocation(prog, 'uTexRes'),
+      mouse:  gl.getUniformLocation(prog, 'uMouse'),
+      prog:   gl.getUniformLocation(prog, 'uProg'),
+      time:   gl.getUniformLocation(prog, 'uTime'),
+      fanStr: gl.getUniformLocation(prog, 'uFanStr'),
+      fanRad: gl.getUniformLocation(prog, 'uFanRad'),
+      circR:  gl.getUniformLocation(prog, 'uCircR'),
+      circW:  gl.getUniformLocation(prog, 'uCircW'),
+    };
+    // live justierbar in der Konsole: window.__FAN.str = 0.08 usw.
+    window.__FAN = { str: 0.020, rad: 0.16, cr: 0.47, cw: 0.07 };
+
+    // Textur (1px-Platzhalter bis das Bild geladen ist)
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1,1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([242,243,224,255]));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    // Animiertes GIF als Texturquelle: das DOM-<img> (#gifSrc) läuft nativ,
+    // wir laden seinen aktuellen Frame jede Runde neu in die Textur hoch.
+    // GIF-Frames SELBST dekodieren und zeitgesteuert durchschalten.
+    // (Der Browser-Pane animiert <img>-GIFs nicht zuverlässig -> Kissen wirkte statisch.)
+    let texRes = [1080, 608];
+    let texReady = false;
+    let frames = [];              // ImageBitmap pro Frame
+    let lastIdx = -1;
+    const FRAME_MS = 70;          // GIF: 80 Frames à 70ms
+    (async function decodeGif(){
+      try {
+        if (typeof ImageDecoder === 'undefined') throw new Error('ImageDecoder nicht verfügbar');
+        const buf = await (await fetch('assets/img/luftkissen.gif')).arrayBuffer();
+        const dec = new ImageDecoder({ data: buf, type: 'image/gif' });
+        await dec.tracks.ready;
+        const n = (dec.tracks.selectedTrack && dec.tracks.selectedTrack.frameCount) || 80;
+        for (let i = 0; i < n; i++){
+          const { image } = await dec.decode({ frameIndex: i });
+          const rw = 720, rh = Math.round(720 * image.displayHeight / image.displayWidth);
+          const bmp = await createImageBitmap(image, { resizeWidth: rw, resizeHeight: rh, resizeQuality: 'medium' });
+          if (image.close) image.close();
+          frames.push(bmp);
+          if (i === 0){ texRes = [bmp.width, bmp.height]; texReady = true; }
+        }
+      } catch(e){ console.error('GIF-Decode fehlgeschlagen:', e); }
+    })();
+
+    let W=0, H=0;
+    function resize(){
+      const dpr = Math.min(devicePixelRatio||1, 2);
+      W = Math.round(innerWidth*dpr); H = Math.round(innerHeight*dpr);
+      canvas.width = W; canvas.height = H;
+      gl.viewport(0,0,W,H);
+    }
+    addEventListener('resize', resize); resize();
+
+    // Maus weich nachziehen
+    const em = { x:0.5, y:0.5 };
+    const start = performance.now();
+    function render(now){
+      em.x += (mouse.x - em.x)*0.12;
+      em.y += (mouse.y - em.y)*0.12;
+      // zeitgesteuert den passenden GIF-Frame in die Textur laden (animiert das Kissen)
+      if (texReady && frames.length){
+        const idx = Math.floor(now / FRAME_MS) % frames.length;
+        if (idx !== lastIdx){
+          lastIdx = idx;
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+          try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frames[idx]); } catch(e){}
+        }
+      }
+      gl.useProgram(prog);
+      gl.uniform2f(U.res, W, H);
+      gl.uniform2f(U.texRes, texRes[0], texRes[1]);
+      gl.uniform2f(U.mouse, em.x, em.y);
+      gl.uniform1f(U.prog, window.__scrollP);
+      gl.uniform1f(U.time, (now-start)/1000);
+      const F = window.__FAN;
+      gl.uniform1f(U.fanStr, F.str); gl.uniform1f(U.fanRad, F.rad);
+      gl.uniform1f(U.circR, F.cr);   gl.uniform1f(U.circW, F.cw);
+      gl.uniform1i(U.tex, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+  })();
+
+  /* ============ Fallback ohne WebGL: Bild + Crossfade ============ */
+  function fallback(){
+    const cv = document.getElementById('gl'); if (cv) cv.style.display='none';
+    const f = document.getElementById('cushionFallback');
+    f.style.display = 'block';
+    (function loop(){
+      f.style.opacity = String(window.__scrollP);
+      requestAnimationFrame(loop);
+    })();
+  }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>nihanzo — startseite</title>
+<!--
+  STARTSEITE (Prototyp v1) — Beginn des Endlos-Scrolls
+  Aufbau (fixe Bühne, bleibt den ganzen Scroll über bestehen):
+   - Kissen-Ring (cushion-ring) rahmt die Mitte
+   - Ecken: Marmor (oben-links), Statue (unten-links, bündig unten), Gebäude (oben-rechts)
+   - Mitte: Fahrradkette, Kamera im größten Kettenglied (Wand-Hover, Dizzy-Filter, Kissen-Aufblasen entfernt)
+   - 1. Kreis (links): Schreib-Animation "enjoy your scroll" (Animo, #C65563) + Klick-Sound
+   - 2. Kreis (in der Kette): kleines Kamera-Bild
+-->
+<style>
+  :root{
+    --accent:#C65563;
+    --center:#ECE6EA;   /* einfarbig, hell – kein dunkleres Lila */
+  }
+  @font-face{
+    font-family:'Animo';
+    src:url('assets/fonts/animo/Animo.otf') format('opentype');
+    font-display:swap;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    background:#efe9ee; font-family:system-ui,sans-serif; overflow-x:hidden; cursor:none;
+  }
+
+  /* ---- fixe Bühne: bleibt über den ganzen Endlos-Scroll ---- */
+  /* KEIN 3D-Kontext mehr: der Ketten-Durchflug ist ein 2D-Zoom ums Kettenloch (optisch identisch, viel billiger) */
+  .stage{ position:fixed; inset:0; z-index:1; overflow:hidden; }
+
+  /* Kissen-Ring (rahmt das Loch). Wrap deckt den Viewport (cover) und
+     hält die Loch-Geometrie stabil, egal welches Seitenverhältnis. */
+  .ringWrap{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:max(100vw, 177.78vh); aspect-ratio:2000 / 1125;
+    z-index:20; pointer-events:none;
+  }
+  .ring{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  /* Loch-Inneres (Ellipse) – Prozentwerte relativ zum Ring = exakt am Loch */
+  /* Ein durchgehender Hintergrund bis unter die Kissen (Rand kaschieren die Kissen) */
+  .core{
+    position:absolute; inset:0; overflow:hidden; z-index:10;
+    background:var(--center);
+    pointer-events:auto;
+  }
+
+  /* Kette – fliegt per Zoom ums Kettenloch Richtung Bildschirm (über den Kissen); Kamera wächst gleichzeitig mit */
+  .chainWrap{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:clamp(360px,41vw,730px); aspect-ratio:819 / 534; z-index:45; pointer-events:none;
+    will-change:transform;
+  }
+  /* chain-fly.webp = chain-trim (819×534) + 48px Rand mit EINGEBACKENEM Schatten/Kontrast (vorher CSS-filter:
+     der musste beim Heranzoomen bis 22× jedes Mal über den ganzen Schirm neu weichgezeichnet werden -> Ruckeln).
+     Negativer Rand -> die Kette selbst liegt exakt wie vorher in der Box (CHX/CHY unverändert). */
+  .chain{ position:absolute; left:-5.861%; top:-8.989%; width:111.722%; height:117.978%; display:block; }
+
+  /* 1. Kreis (links): Schreib-Animation – einzeilig, endet am Ketten-Anfang */
+  .typer{
+    position:fixed; right:71%; top:50%; transform:translateY(-50%);
+    z-index:16; text-align:right; white-space:nowrap; pointer-events:none;
+    font-family:'Animo',system-ui,sans-serif; color:var(--accent);
+    font-size:clamp(16px,2vw,32px); letter-spacing:.02em;
+    text-shadow:0 1px 2px rgba(255,255,255,.55);
+  }
+  .typer .caret{ display:inline-block; width:.5ch; margin-left:.02em;
+    background:var(--accent); animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* Kamera (PXL) – eigenes Element, per Scroll gesteuert (Anflug + Linsen-Zoom).
+     z44 = HINTER der Kette (z45), aber über Kissen/Ecken -> Kette im Vordergrund, Kamera im Loch dahinter */
+  .camera{
+    /* camera-fly.webp = camera-pxl-trim (951×757) + 80px Rand mit eingebackenem Schatten (kein CSS-filter mehr);
+       Breite ×1111/951 -> die Kamera selbst ist so groß wie vorher; LENS im JS auf das neue Bild umgerechnet */
+    position:absolute; left:0; top:0; width:calc(46vw * 1.16824); max-width:1004.7px;
+    transform-origin:0 0; z-index:44; pointer-events:none;
+    will-change:transform;
+  }
+
+  /* Video füllt das INNERE des Kissenrings. Loch = Ellipse (gemessen an cushion-ring.webp:
+     Mitte 50%/50%, rx 38.25%, ry 42.5%). Container etwas größer -> Rand liegt unter den Kissen;
+     Ellipsen-Clip sorgt dafür, dass das Video beim Rausgleiten im Loch verschwindet. */
+  .holeVideo{
+    position:absolute; left:8%; top:4%; width:84%; height:92%;
+    clip-path:ellipse(50% 50% at 50% 50%); overflow:hidden;
+  }
+  .videoPlayer{
+    position:absolute; inset:0; opacity:0; pointer-events:none;
+    background:#0d0d0f; cursor:none; will-change:transform;
+  }
+  .videoPlayer.show{ pointer-events:auto; }
+  .videoPlayer video{ width:100%; height:100%; object-fit:cover; display:block; }
+  .videoPlayer .placeholder{ position:absolute; inset:0; display:grid; place-items:center; gap:12px;
+    color:#f4f4e1; font-family:'Animo',system-ui,sans-serif; letter-spacing:.14em; text-transform:uppercase;
+    background:radial-gradient(120% 120% at 50% 30%,#26262b,#0d0d0f); }
+  .videoPlayer .placeholder .play{ width:64px; height:64px; border-radius:50%;
+    border:2px solid rgba(244,244,225,.7); display:grid; place-items:center; }
+  .videoPlayer .placeholder .play::after{ content:''; border-left:16px solid #f4f4e1;
+    border-top:10px solid transparent; border-bottom:10px solid transparent; margin-left:4px; }
+  .videoPlayer .placeholder small{ font-size:12px; opacity:.7; }
+
+  /* ---- Galerie: freigestelltes Motiv, Original + Skizze EXAKT deckungsgleich (869x1300) ---- */
+  .centerpic{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    z-index:17; pointer-events:none; opacity:0;      /* unter dem Ring (z20) -> hinter den Kissen */
+    height:clamp(340px,64vh,780px); aspect-ratio:822/1300; }
+  .centerpic .cp{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
+    display:block; }                             /* kein Schatten (sonst erscheint er beim Skizzen-Hover) */
+  .cp--sketch{ clip-path:inset(0 100% 0 0); }    /* JS enthüllt das Skizzen-Band unter den Kästen */
+
+  /* Läufer (Daumenkino 8x8 = 64 Frames): sitzt -> steht auf -> rennt nach links raus.
+     Größe & Position setzt JS (deckungsgleich zur sitzenden Skulptur, Frame-0-Schwerpunkt). */
+  .runner{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:clamp(380px,74vh,900px); aspect-ratio:1;
+    z-index:18; pointer-events:none; opacity:0;
+    background:url('assets/img/runner-sheet-4x4.webp') 0% 0% / 400% 400% no-repeat; }
+
+  /* ---- Gleitende TRANSPARENTE Kästen (nahtloser Zug rechts -> links) ---- */
+  /* der Kasten selbst ist nur ein Fenster (Hover) + Beschriftung (weiße Karte) + Faden */
+  .slidebox{ position:fixed; left:0; top:50%; transform:translate(120vw,-50%);
+    z-index:19; pointer-events:none; will-change:transform; }  /* kommen rechts hinter den Kissen hervor */
+  .slidebox .thread{ position:absolute; left:0; top:25%; height:50%; width:auto;
+    transform:translateX(-50%); display:block; }  /* Seil als Trenner: halbe Kastenhöhe, mittig */
+  #box1 .thread{ display:none; }                 /* erster Kasten: kein Faden am Zug-Anfang */
+  /* Beschriftung sitzt auf einer weißen Karte mit runden Ecken */
+  .sb-inner{ position:absolute; left:50%; transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; text-align:center; white-space:nowrap; }
+  /* Beschriftung wandert unterschiedlich hoch: erst Beine, dann Mitte, dann oben */
+  #box1 .sb-inner{ top:70%; }
+  #box2 .sb-inner{ top:74%; }
+  #box3 .sb-inner{ top:50%; }
+  #box4 .sb-inner{ top:22%; }
+  .sb-img{ height:clamp(190px,32vh,380px); width:auto; display:block; }
+  .sb-cap, .sb-text span{ font-family:'Animo',system-ui,sans-serif; color:var(--accent);
+    letter-spacing:.02em; line-height:1.08; }
+  /* Wort-Boxen sehen aus wie ein macOS-Fenster (Titelleiste + Ampel-Punkte) */
+  .sb-text{ background:#fdfdfd; border-radius:11px; padding:36px 26px 18px; gap:4px;
+    box-shadow:0 14px 34px rgba(0,0,0,.20); border:1px solid rgba(0,0,0,.10); overflow:hidden; }
+  .sb-text::before{ content:''; position:absolute; top:0; left:0; right:0; height:27px;
+    background:#e9e9ec; border-bottom:1px solid rgba(0,0,0,.09); }
+  .sb-text::after{ content:''; position:absolute; top:9.5px; left:13px;
+    width:9px; height:9px; border-radius:50%; background:#ff5f57;
+    box-shadow:15px 0 0 #febc2e, 30px 0 0 #28c840; }
+  .sb-cap{ font-size:clamp(16px,2.1vw,30px);      /* Untertitel zentriert unter dem Bild */
+    background:rgba(255,255,255,.96); border-radius:9px; padding:4px 13px; }
+  .sb-text span{ font-size:clamp(20px,2.7vw,40px); }
+  /* kleine URL-Leiste in der Titelleiste */
+  .sb-url{ position:absolute; top:5px; left:58px; right:12px; height:17px; z-index:1;
+    background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:5px;
+    font:500 10px/17px system-ui,-apple-system,sans-serif; font-style:normal; color:#8a8a90;
+    text-align:left; padding-left:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sb-text .plus{ font-size:.72em; opacity:.85; }
+
+  /* Sound-Control: Equalizer mittig oben am Viewport-Rand (Balken hängen nach unten) */
+  .eq{
+    position:fixed; left:50%; top:10px; transform:translateX(-50%) rotate(180deg); transform-origin:center center;
+    z-index:70; pointer-events:none;
+    display:flex; align-items:flex-start; gap:7px; height:40px;
+  }
+  .eq .bar{ width:5px; height:100%; background:var(--accent); border-radius:2.5px; opacity:.92;
+    transform-origin:50% 0; transform:scaleY(.6); will-change:transform;
+    animation:eqb 780ms ease-in-out infinite alternate; }
+  .eq .bar:nth-child(1){ animation-duration:620ms; }
+  .eq .bar:nth-child(2){ animation-duration:900ms; }
+  .eq .bar:nth-child(3){ animation-duration:520ms; }
+  .eq .bar:nth-child(4){ animation-duration:1020ms; }
+  .eq .bar:nth-child(5){ animation-duration:700ms; }
+  .eq .bar:nth-child(6){ animation-duration:860ms; }
+  /* transform statt height: vorher erzwang der Equalizer in JEDEM Frame ein Layout der ganzen Seite */
+  @keyframes eqb{ from{ transform:scaleY(.16); } to{ transform:scaleY(1); } }
+  .eq.muted .bar{ animation:none; transform:scaleY(.16); opacity:.45; }
+  /* Karussell: vorderstes Video anklickbar (Hover „open" weiß) -> Player; außerhalb Hover „close" schwarz */
+  .vcard.front{ pointer-events:auto; cursor:none; }
+  .hoverLbl{ position:fixed; left:0; top:0; z-index:9998; pointer-events:none; opacity:0; transition:opacity .18s ease;
+    font-family:'Animo',system-ui,sans-serif; font-size:14px; letter-spacing:.16em; text-transform:uppercase; }
+  .hoverLbl.open{ color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.45); }
+  .hoverLbl.close{ color:#111; text-shadow:0 1px 3px rgba(255,255,255,.6); }
+  .vpCatch{ position:fixed; inset:0; z-index:19; display:none; cursor:none;
+    background:rgba(236,230,234,0); transition:background .45s ease; }
+  .vpCatch.on{ display:block; background:rgba(236,230,234,.55); }
+  .vplayer{ position:fixed; left:0; top:0; z-index:19; display:none; overflow:hidden; aspect-ratio:4/3;
+    background:#16151a; transform-origin:0 0; cursor:none;
+    transition:transform .6s cubic-bezier(.2,.8,.2,1); box-shadow:0 30px 80px rgba(0,0,0,.35); }
+  .vplayer video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .vplayer .vph{ position:absolute; inset:0; display:grid; place-items:center;
+    background:radial-gradient(120% 120% at 40% 30%,#34323a,#111014);
+    color:#f4f4e1; font-family:'Animo',system-ui,sans-serif; font-size:16px; letter-spacing:.18em; text-transform:uppercase; }
+  .eq__label{ position:fixed; z-index:71; pointer-events:none; opacity:0; transition:opacity .2s ease;
+    font-family:'Animo',system-ui,sans-serif; color:var(--accent); font-size:13px;
+    letter-spacing:.14em; text-transform:uppercase; text-shadow:0 1px 2px rgba(255,255,255,.5); }
+
+  /* Scroll-Orientierung rechts am Rand: Start · 3D · About · Video · Galerie (dickere Balken, Animo + Akzent) */
+  .progress{ position:fixed; right:16px; top:50%; transform:translateY(-50%);
+    z-index:78; display:flex; flex-direction:column; gap:15px; align-items:flex-end; pointer-events:none; }
+  .progress .seg{ position:relative; display:flex; align-items:center; gap:10px; }
+  /* unsichtbare, etwas größere Klickfläche über dem Balken (Klick = Sprung zum Anfang des Abschnitts) */
+  .progress .hit{ position:absolute; right:-9px; top:-7px; bottom:-7px; width:27px; pointer-events:auto; cursor:none; }
+  .progress .lbl{ font-family:'Animo',system-ui,sans-serif; color:var(--accent);
+    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    text-shadow:0 1px 2px rgba(255,255,255,.5); transition:opacity .25s ease; opacity:0; }
+  .progress .lbl{ background:#fff; border-radius:5px; padding:3px 7px; text-shadow:none; }
+  .progress .seg:has(.hit:hover) .lbl{ opacity:1; }     /* Beschriftung nur beim Hover über den Balken */
+  .progress .track{ position:relative; width:9px; height:52px; border-radius:4.5px; pointer-events:none;
+    background:rgba(198,85,99,.20); overflow:hidden; }
+  .progress .fill{ position:absolute; left:0; top:0; width:100%; height:100%;
+    transform-origin:50% 0; transform:scaleY(0); will-change:transform;   /* Füllung per transform (kein Layout) */
+    background:var(--accent); border-radius:4.5px; }
+
+  /* Glas-Objekt (3D, three.js) – Schluss-Szene: kommt aus der Ferne in die Mitte, 1 Umdrehung.
+     Transparenter Vollbild-Canvas IN der Stage unter dem Ring (z18) -> Szene bleibt komplett sichtbar */
+  .glass3d{ position:fixed; inset:0; z-index:18; pointer-events:none; opacity:0; visibility:hidden; }
+  /* Foto-Variante des Glases (?glass=photo): 2D-Foto + Champagner auf Canvas, gleiche Bewegung wie das 3D-Glas */
+  .glassPhoto{ position:fixed; left:50%; top:50%; z-index:18; pointer-events:none; opacity:0;
+    aspect-ratio:409/907; will-change:transform,opacity; display:none; }
+  .glassPhoto canvas{ width:100%; height:100%; display:block; }
+  /* Foto-Galerie (Ref markclennon.com/motion): senkrechter Fächer – offenes Bild in der Mitte,
+     darüber/darunter schräg zusammengefaltet. Kommt nach der Karussell-Runde von oben durchs Loch. */
+  .photoGal{ position:fixed; inset:0; z-index:19; pointer-events:none; visibility:hidden;
+    perspective:2000px; perspective-origin:50% 50%; }
+  .pcard{ position:absolute; left:0; top:0; overflow:hidden; transform-origin:50% 50%;
+    will-change:transform,filter; background:#d9d2d6;     /* KEIN backface-visibility:hidden -> steile Karten flackern nicht */
+    }
+  .pcard img{ width:100%; height:100%; object-fit:cover; display:block; }
+  /* Video-Karussell ums Glas (gionatannese-Stil): 6 Platzhalter 4:3, versetzt, drehen mit dem Scroll.
+     Vordere Karten z19 (vor dem Glas), hintere z17 (hinter dem Glas, milchig). Alle unter dem Ring (z20). */
+  .vcard{ position:fixed; left:0; top:0; aspect-ratio:4/3; z-index:17; pointer-events:none;
+    opacity:0; visibility:hidden; overflow:hidden; background:#16151a; will-change:transform,opacity,filter; }
+  .vcard .vph{ position:absolute; inset:0; display:grid; place-items:center;
+    background:radial-gradient(120% 120% at 40% 30%,#34323a,#111014);
+    color:#f4f4e1; font-family:'Animo',system-ui,sans-serif; font-size:12px; letter-spacing:.16em; text-transform:uppercase; }
+  .vcard::after{ content:''; position:absolute; inset:0; background:#f3eff2; opacity:var(--milk,0); }  /* milchiger Schleier hinten */
+  .glass3d canvas{ width:100%; height:100%; display:block; }
+
+  /* ---- Ecken (fix am Bildschirmrand, vor dem Ring) ---- */
+  .corner{ position:fixed; z-index:40; pointer-events:none; user-select:none; }
+  /* Marmor: 25,7% transparent oben -> hoch in die Ecke ziehen, links ist schon bündig */
+  .corner--marble{ top:0; left:0; width:clamp(240px,28vw,500px); transform:translateY(-25.7%);
+    filter:drop-shadow(0 8px 22px rgba(0,0,0,.16)); }
+  /* Statue: größer, Sockel bündig unten (6,1% transparent unten), etwas mehr nach links */
+  .corner--statue{ bottom:0; left:0; width:clamp(300px,34vw,600px); transform:translate(-16%,6.1%);
+    filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)); }
+  .corner--building{ top:0; right:0; width:clamp(220px,28vw,520px);
+    filter:drop-shadow(0 8px 22px rgba(0,0,0,.18)); }
+
+  /* alter Cursor (springende Figur) wie im Intro */
+  #cursor{ position:fixed; left:0; top:0; width:34px; z-index:9999; pointer-events:none; transform-origin:54.3% 1.8%; /* Spitze = Kopf */
+    transform:translate(-200px,-200px); will-change:transform; opacity:.96; }
+  #cursor img{ width:100%; height:auto; display:block; filter:drop-shadow(0 2px 5px rgba(0,0,0,.35)); }
+
+  /* Scroll-Strecke: Kamera-Fahrt (~2.6) + Galerie (~13.0, inkl. Lauf-Sequenz) */
+  .scroll-space{ position:relative; z-index:0; height:4060vh; }
+
+  /* Ton-Hinweis (verschwindet bei erster Interaktion) */
+  .hint{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+    z-index:60; font-family:'Animo',system-ui,sans-serif; color:var(--accent);
+    font-size:13px; letter-spacing:.12em; text-transform:uppercase; opacity:.7;
+    transition:opacity .5s ease; pointer-events:none; }
+</style>
+<!-- Import-Map MUSS vor jedem Modul-Laden stehen: sonst (z. B. bei ?at=… springt der Director sofort ins Glas)
+     lädt js/glass.js, bevor die Map bekannt ist -> "Failed to resolve module specifier three" -> Glas fehlt -->
+<script type="importmap">
+{ "imports": { "three": "./js/vendor/three/three.module.js" } }
+</script>
+</head>
+<body>
+
+  <div class="stage">
+    <!-- Loch-Inneres -->
+    <div class="core" id="core">
+      <!-- einfarbiger Hintergrund (var --center); Häuserwand nur hinter dem Cursor -->
+    </div>
+
+    <!-- Kette (bleibt ~gleich groß, blendet beim Durchflug aus) -->
+    <div class="chainWrap">
+      <img class="chain" src="assets/img/chain-fly.webp" alt="Fahrradkette" />
+    </div>
+
+    <!-- Kamera (PXL) – eigenes Element, Anflug + Linsen-Zoom -->
+    <img class="camera" id="camera" src="assets/img/camera-fly.webp" alt="Kamera" />
+
+    <!-- Galerie: zentrales Motiv, wechselt Original <-> Skizze (gleiche Größe) -->
+    <div class="centerpic" id="centerpic">
+      <img class="cp cp--orig"   id="cpOrig"   src="assets/img/metalman.webp"        alt="Metall-Figur" />
+      <img class="cp cp--sketch" id="cpSketch" src="assets/img/metalman-sketch.webp" alt="Skizze der Metall-Figur" />
+    </div>
+
+    <!-- Läufer: Sprite-Sheet-Animation (aufstehen + rennen, folgt nach links) -->
+    <div class="runner" id="runner"></div>
+
+    <!-- Glas (3D) – Schluss-Szene, kommt aus dem Inneren des Kreises -->
+    <div class="glass3d" id="glass3d"></div>
+    <div class="glassPhoto" id="glassPhoto"><canvas id="glassPhotoCv" width="409" height="907"></canvas></div>
+
+    <!-- Video-Karussell ums Glas (Platzhalter 4:3) -->
+    <div class="vcard"><div class="vph">video 01</div></div>
+    <div class="vcard"><div class="vph">video 02</div></div>
+    <div class="vcard"><div class="vph">video 03</div></div>
+    <div class="vcard"><div class="vph">video 04</div></div>
+    <div class="vcard"><div class="vph">video 05</div></div>
+    <div class="vcard"><div class="vph">video 06</div></div>
+    <!-- Foto-Galerie (Fächer) -->
+    <div class="photoGal" id="photoGal">
+      <div class="pcard"><img data-src="assets/img/gallery/01.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/02.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/03.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/04.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/05.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/06.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/07.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/08.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/09.webp" alt="" decoding="async" /></div>
+      <div class="pcard"><img data-src="assets/img/gallery/10.webp" alt="" decoding="async" /></div>
+    </div>
+
+    <!-- Video-Player (öffnet vom vordersten Karussell-Video; Klick daneben schließt) -->
+    <div class="vpCatch" id="vpCatch"></div>
+    <div class="vplayer" id="vplayer"><video playsinline loop></video><div class="vph" id="vpLabel">video</div></div>
+
+    <!-- Gleitende, leicht weiß schimmernde Kästen (rechts -> links) -->
+    <div class="slidebox" id="box1">
+      <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
+      <div class="sb-inner">
+        <img class="sb-img" src="assets/img/mini-me.png" alt="mini me" />
+        <div class="sb-cap">mini me</div>
+      </div>
+    </div>
+    <div class="slidebox" id="box2">
+      <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
+      <div class="sb-inner sb-text"><em class="sb-url">https://</em><span>videoediting</span><span class="plus">+</span><span>storytelling</span></div>
+    </div>
+    <div class="slidebox" id="box3">
+      <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
+      <div class="sb-inner sb-text"><em class="sb-url">https://</em><span>davinci</span><span class="plus">+</span><span>Photoshop</span></div>
+    </div>
+    <div class="slidebox" id="box4">
+      <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
+      <div class="sb-inner sb-text"><em class="sb-url">https://</em><span>Blender</span><span class="plus">+</span><span>Backend</span><span class="plus">+</span><span>AI Interface</span></div>
+    </div>
+
+    <!-- Schreib-Animation (1. Kreis links) -->
+    <div class="typer" id="typer"></div>
+
+    <!-- alter Cursor -->
+    <div id="cursor"><img src="assets/img/cursor-jump.png" alt=""></div>
+
+    <!-- Ring zuletzt (Rand liegt vor der Mitte, Loch ist transparent) -->
+    <div class="ringWrap" id="ringWrap">
+      <!-- Video im Loch (unter den Kissen, Ecken verdeckt) -->
+      <div class="holeVideo">
+        <div class="videoPlayer" id="videoPlayer">
+          <video id="reel" autoplay muted loop playsinline preload="metadata" poster="assets/img/camera-pxl-trim.webp"></video>
+          <div class="placeholder" id="vph"><div class="play"></div><small>reel · video einsetzen</small></div>
+        </div>
+      </div>
+      <img class="ring" src="assets/img/cushion-ring.webp" alt="Kissen-Ring" />
+    </div>
+
+    <!-- Ecken -->
+    <img class="corner corner--marble"   src="assets/img/marble-tl.png" alt="Marmor" />
+    <img class="corner corner--statue"   src="assets/img/statue.webp"   alt="Statue" />
+    <img class="corner corner--building" src="assets/img/building.webp" alt="Gebäude" />
+
+    <!-- Ton-an/aus-Animation: gebogener Equalizer (dekorativ, spiegelt nur den Zustand) -->
+    <div class="eq" id="eq" aria-hidden="true">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </div>
+    <div class="eq__label" id="eqLabel">mute</div>
+  </div>
+
+  <!-- Glas-Objekt (3D), links mittig am Rand, taumelt mit dem Scroll -->
+
+  <!-- Scroll-Orientierung (rechter Rand): Start · 3D · About · Video · Galerie -->
+  <div class="progress" id="progress">
+    <div class="seg"><span class="lbl">start</span><span class="track"><span class="fill"></span></span><span class="hit"></span></div>
+    <div class="seg"><span class="lbl">3D</span><span class="track"><span class="fill"></span></span><span class="hit"></span></div>
+    <div class="seg"><span class="lbl">about</span><span class="track"><span class="fill"></span></span><span class="hit"></span></div>
+    <div class="seg"><span class="lbl">video</span><span class="track"><span class="fill"></span></span><span class="hit"></span></div>
+    <div class="seg"><span class="lbl">galerie</span><span class="track"><span class="fill"></span></span><span class="hit"></span></div>
+  </div>
+
+  <div class="hoverLbl" id="hoverLbl"></div>
+  <div class="hint" id="hint">scroll · ton an bei klick</div>
+  <div class="scroll-space"></div>
+
+<script>
+  /* ============ Cursor-getriebene Effekte ============ */
+  const ringWrap= document.getElementById('ringWrap');
+
+
+  /* ============ alter Cursor (springende Figur, dreht in Bewegungsrichtung) ============ */
+  (function planeCursor(){
+    const cursor = document.getElementById('cursor');
+    let mx = innerWidth/2, my = innerHeight/2, lx = mx, ly = my, angle = 0;
+    const NOSE0 = -90;
+    addEventListener('mousemove', (e)=>{ mx = e.clientX; my = e.clientY; });
+    (function frame(){
+      const vx = mx-lx, vy = my-ly, speed = Math.hypot(vx,vy);
+      lx = mx; ly = my;
+      if(speed > 1.1){
+        const t = Math.atan2(vy,vx)*180/Math.PI - NOSE0;
+        let d = ((t-angle+540)%360)-180; angle += d*0.18;
+      }
+      cursor.style.transform = `translate(${mx}px,${my}px) translate(-54.3%,-1.8%) rotate(${angle}deg)`;
+      requestAnimationFrame(frame);
+    })();
+  })();
+
+  /* ============ Schreib-Animation + Klick-Sound ============ */
+  const typer = document.getElementById('typer');
+  const hint  = document.getElementById('hint');
+  const TEXT  = 'enjoy your scroll';
+  let audioCtx = null, master = null, started = false, muted = false;
+  const video = document.getElementById('reel');
+
+  function ensureAudio(){
+    if(audioCtx) return;
+    try{
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      master = audioCtx.createGain();
+      master.gain.value = muted ? 0 : 0.9;
+      master.connect(audioCtx.destination);
+    }catch(_){}
+  }
+
+  // Schreibmaschinen-Ton = Auszug vom Beginn des Tippens in assets/raw/kave_msri-typewriter-sound-effect-312919.mp3
+  // (5.70–10.10 s; davor ist die Datei still) -> assets/audio/typewriter-intro.m4a (4.4 s, 74 KB).
+  // Der Auszug hat genau 17 Anschläge = 17 Zeichen von „enjoy your scroll"; jeder Buchstabe erscheint auf seinem Anschlag
+  // (Zeiten per Onset-Erkennung aus der Datei gemessen, relativ zum Auszug-Beginn).
+  const TW_ONSETS=[0.06,0.415,0.675,0.855,1.005,1.205,1.42,1.575,1.98,2.415,2.65,2.87,3.01,3.395,3.615,3.785,4.015];
+  const TW_LEN=4.3;
+  let twData=null, twBuf=null, twStartAt=0, twPlaying=false;
+  fetch('assets/audio/typewriter-intro.m4a').then(r=>r.arrayBuffer()).then(b=>{ twData=b; }).catch(()=>{});
+  function twDecode(){
+    if(twBuf || !twData || !audioCtx) return Promise.resolve(twBuf);
+    return audioCtx.decodeAudioData(twData.slice(0)).then(b=>(twBuf=b)).catch(()=>null);
+  }
+  // spielt den Auszug ab der aktuellen Tipp-Zeit -> auch wenn der Ton erst mitten im Tippen freigegeben wird, bleibt er synchron
+  // ---- Kamera-Auslöser & Bleistift: echte Aufnahmen (User-MP3s aus assets/raw, zugeschnitten + angeglichen) ----
+  //  shutter.m4a     <- kauasilbershlachparodes-shutter-click-2-494026.mp3 (Stille vorne weg, 0.28 s)
+  //  pencil-loop.m4a <- freesound_community-writing-with-pencil-on-paper-68981.mp3 (1–11 s, durchgehendes Schreiben, als Schleife)
+  const SFX={ shutter:{url:'assets/audio/shutter.m4a', data:null, buf:null},
+              pencil:{url:'assets/audio/pencil-loop.m4a', data:null, buf:null},
+              shield1:{url:'assets/audio/shield-1.m4a', data:null, buf:null},
+              shield2:{url:'assets/audio/shield-2.m4a', data:null, buf:null},
+              fizzy:{url:'assets/audio/fizzy-pour.m4a', data:null, buf:null} };
+  for(const k in SFX) fetch(SFX[k].url).then(r=>r.arrayBuffer()).then(b=>{ SFX[k].data=b; }).catch(()=>{});
+  const sfxReady=()=> audioCtx && master && audioCtx.state==='running';
+  function sfxBuf(k){
+    const x=SFX[k]; if(x.buf || !x.data || !audioCtx) return Promise.resolve(x.buf);
+    return audioCtx.decodeAudioData(x.data.slice(0)).then(b=>(x.buf=b)).catch(()=>null);
+  }
+  function shutterSound(){
+    if(!sfxReady()) return;
+    sfxBuf('shutter').then(buf=>{ if(!buf) return;
+      const src=audioCtx.createBufferSource(), g=audioCtx.createGain(); g.gain.value=0.9;
+      src.buffer=buf; src.connect(g).connect(master); src.start(); });
+  }
+  // Läufer-Schritte: shield-1/-2.m4a <- yodguard-shield_impact-1/-5 (0.7 s, angeglichen) – immer abwechselnd
+  let shieldNext=1;
+  function stepSound(){
+    if(!sfxReady()) return;
+    const k='shield'+shieldNext; shieldNext=3-shieldNext;
+    sfxBuf(k).then(buf=>{ if(!buf) return;
+      const src=audioCtx.createBufferSource(), g=audioCtx.createGain(); g.gain.value=0.14;
+      src.buffer=buf; src.connect(g).connect(master); src.start(); });
+  }
+  // Einschenken: fizzy-pour.m4a <- u_xg7ssi08yr-fizzy-drink-pour-362043.mp3 (0.95–12.5 s, Stille vorne weg).
+  // Läuft, solange sich das Glas bis zum Schaum füllt; Einstieg an der Stelle, die zum Füllstand passt; aus = lange weiche Blende
+  let pour=null;
+  function pourSound(on, fill){
+    if(on && !pour){
+      if(!sfxReady()) return;
+      const token=pour={pending:true};
+      sfxBuf('fizzy').then(buf=>{
+        if(pour!==token) return;
+        if(!buf){ pour=null; return; }
+        const src=audioCtx.createBufferSource(), g=audioCtx.createGain(), t=audioCtx.currentTime;
+        src.buffer=buf; g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.14,t+0.05);   // = Lautstärke der Schritte
+        src.connect(g).connect(master); src.start(t, Math.min(fill||0,0.8)*(buf.duration-2));
+        src.onended=()=>{ if(pour && pour.src===src) pour=null; };
+        pour={src,g};
+      });
+    } else if(!on && pour){
+      const p=pour; pour=null; if(p.pending) return;
+      const t=audioCtx.currentTime; p.g.gain.cancelScheduledValues(t); p.g.gain.setValueAtTime(p.g.gain.value,t);
+      // lange, weiche Ausblende: wird langsam leiser (Zeitkonstante 1.2 s -> nach ~5 s verklungen)
+      p.g.gain.setTargetAtTime(0.0001,t,1.2); try{ p.src.stop(t+6); }catch(_){}
+    }
+  }
+  // Bleistift-Schleife: läuft nur, solange an; Stopp „direkt" (15 ms Blende gegen Knacken)
+  let pen=null, penWanted=false;
+  function pencilSound(on){
+    penWanted=on;
+    if(on && !pen){
+      if(!sfxReady()) return;
+      const token=pen={pending:true};
+      sfxBuf('pencil').then(buf=>{
+        if(pen!==token) return;                                 // inzwischen aus/neu gestartet
+        if(!buf || !penWanted){ pen=null; return; }
+        const src=audioCtx.createBufferSource(), g=audioCtx.createGain(), t=audioCtx.currentTime;
+        src.buffer=buf; src.loop=true; g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.5,t+0.03);
+        src.connect(g).connect(master); src.start(t, Math.random()*buf.duration*0.8);   // jedes Mal eine andere Stelle
+        pen={src,g};
+      });
+    } else if(!on && pen){
+      const p=pen; pen=null; if(p.pending) return;
+      const t=audioCtx.currentTime; p.g.gain.cancelScheduledValues(t); p.g.gain.setValueAtTime(p.g.gain.value,t);
+      p.g.gain.linearRampToValueAtTime(0.0001,t+0.015); p.src.stop(t+0.03);
+    }
+  }
+
+  function twPlayNow(){
+    if(twPlaying || !audioCtx || !master || audioCtx.state!=='running') return;
+    twDecode().then(buf=>{
+      if(!buf || twPlaying) return;
+      const off=(performance.now()-twStartAt)/1000;
+      if(!twStartAt || off>=TW_LEN) return;
+      twPlaying=true;
+      const src=audioCtx.createBufferSource(); src.buffer=buf; src.connect(master); src.start(0, Math.max(0,off));
+    });
+  }
+
+  /* ---- Equalizer = reine Ton-an/aus-Animation (spiegelt nur den Zustand, kein Schalter mehr) ---- */
+  const eq = document.getElementById('eq');
+  const eqLabel = document.getElementById('eqLabel');
+  function setMute(m){
+    muted = m;
+    if(master) master.gain.value = muted ? 0 : 0.9;
+    if(video) video.muted = muted;
+    eq.classList.toggle('muted', muted);
+    eqLabel.textContent = muted ? 'unmute' : 'mute';
+  }
+
+  // mute/unmute NUR am Video-Player (Hover zeigt Label, Klick schaltet)
+  const videoPlayerEl = document.getElementById('videoPlayer');
+  videoPlayerEl.addEventListener('click', ()=>{ ensureAudio(); if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); setMute(!muted); });
+  videoPlayerEl.addEventListener('pointerenter', ()=>{ eqLabel.textContent = muted?'unmute':'mute'; eqLabel.style.opacity='1'; });
+  videoPlayerEl.addEventListener('pointermove', (e)=>{ eqLabel.style.left=(e.clientX+16)+'px'; eqLabel.style.top=(e.clientY-8)+'px'; });
+  videoPlayerEl.addEventListener('pointerleave', ()=>{ eqLabel.style.opacity='0'; });
+
+  /* ---- Sounds automatisch aus beim Verlassen der Seite / Tab wechseln ---- */
+  function suspendAll(){ try{ audioCtx && audioCtx.suspend(); }catch(_){} try{ video && video.pause(); }catch(_){} }
+  function resumeAll(){ if(muted) return; try{ audioCtx && audioCtx.resume(); }catch(_){} }
+  document.addEventListener('visibilitychange', ()=>{ document.hidden ? suspendAll() : resumeAll(); });
+  window.addEventListener('blur', suspendAll);
+  window.addEventListener('focus', resumeAll);
+  window.addEventListener('pagehide', suspendAll);
+  window.addEventListener('beforeunload', suspendAll);
+
+  function type(){
+    twStartAt = performance.now();
+    const render=(n)=>{
+      typer.textContent = TEXT.slice(0, n);
+      const caret = document.createElement('span');
+      caret.className = 'caret'; caret.textContent = ' ';
+      typer.appendChild(caret);
+    };
+    render(0);
+    TW_ONSETS.forEach((t,i)=> setTimeout(()=>render(i+1), t*1000));   // Buchstabe i genau auf Anschlag i
+  }
+
+  function begin(){
+    ensureAudio();
+    if(!started){ started = true; hint.style.opacity = '0'; type(); }
+    if(audioCtx){ (audioCtx.state==='suspended' ? audioCtx.resume() : Promise.resolve()).then(twPlayNow).catch(()=>{}); }
+  }
+  // Autoplay-Regeln: Ton erst nach erster Nutzer-Interaktion
+  window.addEventListener('pointerdown', begin, {once:true});
+  window.addEventListener('keydown',    begin, {once:true});
+  window.addEventListener('wheel',      begin, {once:true, passive:true});
+  // Ohne Ton trotzdem tippen, falls 1.2s keine Interaktion kommt
+  setTimeout(()=>{ if(!started){ started = true; hint.style.opacity='0'; type(); } }, 1400);
+
+  /* ============ Scroll-Director: Kamera-Fahrt -> Galerie (ein rAF-Loop) ============ */
+  (function scrollDirector(){
+    const stage       = document.querySelector('.stage');
+    const chainWrap   = document.querySelector('.chainWrap');
+    const chainImg    = document.querySelector('.chain');
+    const cam         = document.getElementById('camera');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const centerpic   = document.getElementById('centerpic');
+    const cpOrig      = document.getElementById('cpOrig');
+    const cpSketch    = document.getElementById('cpSketch');
+    const boxes       = ['box1','box2','box3','box4'].map(id=>document.getElementById(id));
+    const eqEl        = document.getElementById('eq');
+    const runner      = document.getElementById('runner');
+    const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+    const smooth=(u)=>u*u*(3-2*u);
+    const LENS=[0.49058,0.57347];        // Linsenmitte im camera-fly.webp (= 48.9%/58.9% im Bild ohne Rand)
+    const CHX=0.715, CHY=0.647;
+    chainWrap.style.transformOrigin = (CHX*100)+'% '+(CHY*100)+'%';
+    // Maße der Startsequenz EINMAL messen (und bei resize) statt in jedem Frame (vermeidet erzwungene Layouts)
+    const SG={CX:0,CY:0,loopX:0,loopY:0,camW:0,camH:0};
+    function measureStart(){
+      SG.CX=innerWidth/2; SG.CY=innerHeight/2;
+      const cwW=chainWrap.offsetWidth, cwH=chainWrap.offsetHeight;
+      SG.loopX=SG.CX+(CHX-0.5)*cwW; SG.loopY=SG.CY+(CHY-0.5)*cwH;       // größtes Kettenglied (Kamera sitzt darin)
+      SG.camW=cam.offsetWidth; SG.camH=SG.camW*917/1111;                  // unabhängig davon, ob das Bild schon geladen ist
+    }
+    measureStart(); addEventListener('load', measureStart, {once:true});
+
+    // Anteil der Kamerafahrt an der Gesamtstrecke (Rest = Galerie); langsamerer Scroll
+    const CAM_VH=2.6, GAL_VH=38.0, F=CAM_VH/(CAM_VH+GAL_VH);
+    // Galerie (g = 0..1): Video langsam nach links raus; Zug aus 4 gleichen Kästen, box1 führt (früher)
+    // TRAIN_END = Zug (inkl. letzter Kasten) hat den Viewport verlassen
+    const K=13/GAL_VH;                               // Werte waren für GAL 13 getunt -> gleiche Geschwindigkeit in vh
+    const VID_EXIT=0.24*K, TRAIN_SPAN=0.66*K;
+    let TRAIN_START=0.05, TRAIN_END=TRAIN_START+TRAIN_SPAN;   // TRAIN_START setzt sizeBoxes: erst wenn das Motiv voll da ist
+    // Läufer-Daumenkino (transparente Vorlage): 64 Frames (8x8), letzter sichtbarer = 53. Frame-0 = sitzende Skulptur.
+    let RUN_START=0.61, STAND_END=0.73, GLASS_START=0.8, lastRunFrame=-1;
+    const GLASS_SPAN=3.2/GAL_VH;                   // Anflug + Umdrehung des Glases (in g)
+    const CAR_SPAN=9.0/GAL_VH;                     // Karussell: eine volle Drehung über 9 Bildschirmhöhen (langsamer)
+    const PHO_SPAN=10.0/GAL_VH;                    // Foto-Galerie: 10 Bilder über 10 Bildschirmhöhen
+    const photoGal=document.getElementById('photoGal'), pcards=[...photoGal.querySelectorAll('.pcard')];
+    const PAR=[1.5,1.332,1.5,1.5,1.5,1.5,1.783,1.777,1.48,1.48];   // Seitenverhältnisse der Fotos
+    let photosLoaded=false;
+    const cards=[...document.querySelectorAll('.vcard')];
+    // versetzte, „willkürliche" Anordnung: Winkel°, Höhe (Anteil Loch-Halbhöhe), Größe, Radius
+    const CARD=[{a:8,y:-0.42,w:1.00,r:1.00},{a:66,y:0.30,w:0.78,r:0.90},{a:121,y:-0.08,w:1.18,r:1.06},
+                {a:183,y:0.44,w:0.88,r:0.96},{a:236,y:-0.30,w:0.82,r:1.10},{a:302,y:0.12,w:1.06,r:0.88}];
+    // Austritts-Rang je Video: sortiert nach Tiefe z=cos(a)·r (hinten = negativ zuerst)
+    const EM_RANK=(()=>{ const ord=CARD.map((k,i)=>[i,Math.cos(k.a*Math.PI/180)*k.r]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
+      const rk=[]; ord.forEach((i,r)=>rk[i]=r); return rk; })();
+    const glassEl=document.getElementById('glass3d'); window.__glass={t:0};
+    let glassLoaded=false;   // three.js + GLB erst nachladen, wenn die Kamerafahrt vorbei ist (nicht beim Seitenstart)
+    function loadGlass(){ if(glassLoaded) return; glassLoaded=true;
+      const sc=document.createElement('script'); sc.type='module'; sc.src='js/glass.js'; document.body.appendChild(sc); }
+    // Glas lädt erst nach der Kamerafahrt (Video steht im Loch) oder bei einem Balken-Sprung – NIE während der Kettenfahrt   // wird in sizeBoxes exakt gesetzt: wenn box4 die Hörner (volle Motivbreite) verlässt
+    let Wc=360, Hc=500;   // Kastenmaße = Motivmaße (per sizeBoxes gesetzt)
+    // Equalizer sitzt jetzt fix mittig oben am Viewport-Rand (siehe CSS) – keine Wanderung mehr
+
+    let targetP=0, curP=-1, videoShown=false, videoPlaying=false, shutterArmedOff=false, pencilOn=false, pourPrev=false;
+    function sizeBoxes(){ Wc=centerpic.offsetWidth||Wc; Hc=centerpic.offsetHeight||Hc;
+      for(const b of boxes){ b.style.width=Wc+'px'; b.style.height=Hc+'px'; }
+      // RUN_START = g, bei dem box4 (letzter Kasten) mit der rechten Kante die linke Motivkante (Hörnerbreite) passiert
+      const ttRun=(innerWidth/2 + 4.5*Wc)/(innerWidth + 4*Wc);
+      // Zug startet erst, wenn picIn=1 (rechte Videokante 80px links der Hörner): smoothstep invertieren
+      const vW=videoPlayer.offsetWidth||1000, need=Math.min((vW/2+Wc/2+80)/(vW+20),1);
+      TRAIN_START=(0.5-Math.sin(Math.asin(1-2*need)/3))*VID_EXIT; TRAIN_END=TRAIN_START+TRAIN_SPAN;
+      RUN_START=TRAIN_START + ttRun*(TRAIN_END-TRAIN_START); STAND_END=RUN_START+0.12*K;
+      // Glas startet, wenn der Läufer (rechte Kante) die linke Loch-Kante passiert hat
+      const rr=ringWrap.getBoundingClientRect(), holeL=Math.max(0, rr.left+0.117*rr.width);
+      const RATE=(innerWidth+4*Wc)/(TRAIN_END-TRAIN_START);
+      // etwas früher: schon wenn die Läufer-Kante noch 30% der Breite vor der Loch-Kante ist
+      GLASS_START=Math.min(STAND_END + (innerWidth/2 + runner.offsetWidth/2 - holeL - innerWidth*0.30)/RATE, 1-GLASS_SPAN-CAR_SPAN-PHO_SPAN-0.4/GAL_VH);
+    }
+    function onScroll(){ const m=document.documentElement.scrollHeight-innerHeight; targetP = m>0?cl(scrollY/m,0,1):0; }
+    addEventListener('scroll', onScroll, {passive:true});
+    addEventListener('resize', ()=>{ measureStart(); onScroll(); sizeBoxes(); });
+    if('scrollRestoration' in history) history.scrollRestoration='manual';
+    if(!/[?&](at|g)=/.test(location.search)){ scrollTo(0,0); addEventListener('load',()=>{ scrollTo(0,0); targetP=0; curP=0; },{once:true}); }
+    onScroll(); sizeBoxes();
+
+    // --- Direkt-Einstieg zum Bearbeiten: startpage.html?at=glas (oder ?g=0.55 für eine genaue Galerie-Position) ---
+    //     springt ohne Durchfahrt an die Stelle (curP wird direkt gesetzt)
+    (function jumpTo(){
+      const q=new URLSearchParams(location.search);
+      const AT={ video:()=>0.01, galerie:()=>TRAIN_START, laeufer:()=>RUN_START-0.02,
+                 glas:()=>GLASS_START+0.35*GLASS_SPAN, karussell:()=>GLASS_START+GLASS_SPAN+0.02,
+                 fotos:()=>GLASS_START+GLASS_SPAN+CAR_SPAN+0.004 };
+      let gJ = q.has('g') ? parseFloat(q.get('g')) : (AT[q.get('at')] ? AT[q.get('at')]() : null);
+      if(gJ==null || isNaN(gJ)) return;
+      const go=()=>{ const m=document.documentElement.scrollHeight-innerHeight;
+        const P=F+cl(gJ,0,1)*(1-F); scrollTo(0,P*m); targetP=P; curP=P; };
+      go(); addEventListener('load', go, {once:true});
+    })();
+
+    const P=1100, SC0=0.09, SCEND=4.30, ZBASE=SCEND/SC0;
+    const CUT=0.80;   // Auslöser-Moment = harter Schnitt: Kamera + Kette weg, Video im Loch da
+
+    function applyCamera(p){
+      // EIN gemeinsamer exponentieller Zoom-Faktor: Kette und Kamera wachsen im festen Verhältnis (gleichmäßig wirkend)
+      const Z = Math.pow(ZBASE, p);
+      typer.style.opacity = String(1 - cl(p/0.09,0,1));
+      const cut = p>=CUT;                                   // Auslöser = harter Schnitt aufs Video
+      // Kette: 2D-Zoom um das Kettenloch = exakt die frühere Perspektiv-Projektion (translateZ), ohne 3D-Kontext
+      chainWrap.style.transform = `translate(-50%,-50%) scale(${Z.toFixed(4)})`;
+      chainWrap.style.visibility = cut ? 'hidden' : '';
+      // Kamera: driftet Loch -> Mitte, Fokus wandert Mitte -> Linse, Größe = SC0·Z
+      const s = SC0 * Z;
+      const dc = smooth(cl(p/0.55,0,1));
+      const tx = SG.loopX + (SG.CX-SG.loopX)*dc, ty = SG.loopY + (SG.CY-SG.loopY)*dc;
+      const fl = smooth(cl((p-0.55)/0.27,0,1));
+      const fx = 0.5 + (LENS[0]-0.5)*fl, fy = 0.5 + (LENS[1]-0.5)*fl;
+      cam.style.transform = `translate(${(tx - fx*SG.camW*s).toFixed(1)}px,${(ty - fy*SG.camH*s).toFixed(1)}px) scale(${s.toFixed(4)})`;
+      cam.style.visibility = cut ? 'hidden' : '';
+      // Fotoauslöser vor der (noch scharfen) Linse – im selben Frame wie der Schnitt
+      if(cut && !shutterArmedOff){ shutterArmedOff=true; if(window.shutterSound) shutterSound(); }
+      if(p<CUT-0.06) shutterArmedOff=false;
+    }
+
+    // ================= Foto-Fächer (Leporello, Ref markclennon.com/motion) =================
+    // Kette aus starren Karten, Kante an Kante (Unterkante j+1 = Oberkante j), Bild 0 unten.
+    // Winkel hängt NUR stetig vom Abstand d = j − kEff zur offenen Stelle ab -> keine Sprünge:
+    //   |d|<=1: −PH1·d (Nachbarn klappen mit der Außenkante her), danach stetiger Zickzack weg/her
+    //   (Übergang über FLACH, nie über hochkant -> Kettenpositionen bleiben stetig).
+    // Die offene Stelle liegt immer in der Loch-Mitte (= Perspektiv-Zentrum) -> jedes Bild sieht gleich aus.
+    const FAN_PH1=70, FAN_PH2=84;
+    function fanAngle(d){
+      const a=Math.abs(d), sg=Math.sign(d);
+      if(a<=1) return -FAN_PH1*d;
+      const t=a-1, n=Math.floor(t), f=smooth(t-n);
+      const v=(m)=> (m%2===0) ? -FAN_PH1 : FAN_PH2;        // her, weg, her, …
+      return sg*(v(n)+(v(n+1)-v(n))*f);
+    }
+    // ---- Galerie-Variante: STANDARD = Rad wie markclennon.com/motion (layoutWheel).
+    //      Die alte Leporello-Version gibt es nur noch mit startpage.html?fan=leporello.
+    const FAN_FLIP = new URLSearchParams(location.search).get('fan')!=='leporello';
+    // ---- Rad exakt nach markclennon.com/motion (MotionListing.coverFlowStyleVectical, three.js → CSS übertragen) ----
+    // Alle Bilder sitzen als Schaufeln auf einem Rad (Schritt 2π/n, n≥10). Winkel ce = se·step − 270°,
+    // y = cos(ce)·R, z = sin(ce)·R, Drehung = ce; das aktuelle Bild (|se|<1) dreht zusätzlich (1−|se|)·−90° flach zur Kamera
+    // und rückt 20 Einheiten zurück. Sichtbar nur |se|<3, kein Ausblenden. Proportion wie die Referenz auf großen
+    // Bildschirmen: R = 0.58·Bildbreite, Kamera-Abstand zur Front = 1.8·Bildbreite. Beim Umklappen etwas Platz:
+    // oben ≈0.038·B (wie Ref), unten schieben wir umgeklappte Bilder um 0.098·B nach unten (sonst decken sie den
+    // hochkant stehenden Streifen) -> unten ≈0.013·B Kreis-Hintergrund sichtbar (Maße aus Beispielbild).
+    // Unterschied: se = kEff − j (statt j − current) -> die Bilder kommen bei uns von OBEN und laufen nach unten.
+    function layoutWheel(kEff, CY, W, CX){
+      const N=pcards.length, n=Math.max(N,10), step=2*Math.PI/n, D2R=Math.PI/180;
+      const R=0.58*W, Hc=W/1.5, DROP=0.098*W;                          // alle Karten 3:2 (Bild füllt per object-fit)
+      photoGal.style.perspective=(1.8*W).toFixed(0)+'px';
+      let bottom=-1e9;
+      for(let j=0;j<N;j++){
+        const c=pcards[j], se=kEff-j, ae=Math.abs(se);
+        if(ae>=3){ c.style.visibility='hidden'; continue; }
+        c.style.visibility='visible';
+        const ce=se*step-270*D2R;
+        let rot=ce, y3=Math.cos(ce)*R, z3=Math.sin(ce)*R;
+        if(ae<1){ rot+=(1-ae)*-90*D2R; z3+=(1-ae)*-20*(R/450); }
+        const y=CY-y3+DROP*smooth(cl((se-0.75)/0.5,0,1)), z=z3-R;   // three (y oben) -> CSS (y unten); Front auf z≈0; umgeklappte etwas tiefer
+        c.style.width=W.toFixed(1)+'px'; c.style.height=Hc.toFixed(1)+'px';
+        c.style.transform=`translate3d(${(CX-W/2).toFixed(1)}px,${(y-Hc/2).toFixed(1)}px,${z.toFixed(1)}px) rotateX(${(-rot/D2R).toFixed(2)}deg)`;
+        // Reihenfolge: das gehende Bild bleibt vorne, bis es hochkant ist (se<0.714 ≙ 90°); erst danach liegt das
+        // kommende Bild vorne -> kein ruckartiges Nach-vorne-Springen des neuen mittleren Bildes
+        c.style.zIndex = (se>=0 && se<0.714) ? '3000' : (se<0 && se>-1) ? '2900' : String(2000+Math.round(z));
+        c.style.filter='none'; c.style.opacity='1';
+        if(j===0) bottom=y+Hc/2*Math.abs(Math.cos(rot));
+      }
+      return { bottom };
+    }
+    function layoutFan(ph, CX, CY, hx, hy){
+      const N=pcards.length, W=Math.min(hx*1.05, hy*1.8), H=PAR.map(a=>W/a);
+      // flip: in EINEM Rutsch – kEff läuft linear von −3 (Bild 1 noch hinter dem oberen Kissen) bis N+2 (letztes unten weg)
+      if(FAN_FLIP){
+        // (1) Galerie kommt wie zuvor als Ganzes von oben herunter (Bild 1 offen), schiebt dabei das Karussell weg,
+        // (2) danach dreht das Rad in EINEM Rutsch weiter, bis das letzte Bild umgeklappt ist (se=1),
+        // (3) dann fährt die Galerie als Ganzes nach unten raus (hinter das untere Kissen)
+        const E=0.15, X=0.12, Y0=CY-hy-H[0]/2-30, x=cl(ph/E,0,1);
+        let Yw=Y0+(CY-Y0)*(1-(1-x)*(1-x));
+        const kW=cl((ph-0.8*E)/(1-X-0.8*E),0,1)*N;
+        if(ph>1-X){ const xe=(ph-(1-X))/X; Yw=CY+(hy+60)*xe*xe; }  // easeIn: langsam los, dann raus
+        return layoutWheel(kW, Yw, W, CX);
+      }
+      // (1) Bild 1 fährt offen von oben in die Mitte, (2) dort klappen alle nacheinander auf, (3) das letzte fährt unten raus
+      const Y0=CY-hy-H[0]/2-30, Y1=CY+hy+H[N-1]/2+30, E=0.12;
+      let Yf, kLin;
+      if(ph<E){ const x=ph/E; Yf=Y0+(CY-Y0)*(1-(1-x)*(1-x)); kLin=0; }
+      else if(ph<1-E){ Yf=CY; kLin=(ph-E)/(1-2*E)*(N-1); }
+      else { const x=(ph-(1-E))/E; Yf=CY+(Y1-CY)*x*x; kLin=N-1; }
+      const kI=Math.min(Math.floor(kLin),N-2), fr=kLin-kI;
+      const kEff = kLin>=N-1 ? N-1 : kI + smooth(cl((fr-0.12)/0.76,0,1));   // Leporello: kurz verweilen, dann aufklappen
+      const R=H.map((_,j)=>fanAngle(j-kEff)*Math.PI/180);
+      const cy=[0], cz=[0];
+      for(let j=1;j<N;j++){
+        cy[j]=cy[j-1]-H[j-1]/2*Math.cos(R[j-1])-H[j]/2*Math.cos(R[j]);
+        cz[j]=cz[j-1]-H[j-1]/2*Math.sin(R[j-1])-H[j]/2*Math.sin(R[j]);
+      }
+      const j0=Math.floor(kEff), j1=Math.min(j0+1,N-1), fk=kEff-j0;
+      const offY=Yf-(cy[j0]+(cy[j1]-cy[j0])*fk), offZ=-(cz[j0]+(cz[j1]-cz[j0])*fk);   // offene Stelle -> Mitte, z=0
+      for(let j=0;j<N;j++){
+        const c=pcards[j], deg=R[j]*180/Math.PI;
+        c.style.width=W.toFixed(1)+'px'; c.style.height=H[j].toFixed(1)+'px';
+        c.style.transform=`translate3d(${(CX-W/2).toFixed(1)}px,${(cy[j]+offY-H[j]/2).toFixed(1)}px,${(cz[j]+offZ).toFixed(1)}px) rotateX(${deg.toFixed(2)}deg)`;
+        c.style.filter=`brightness(${(1-0.28*Math.abs(Math.sin(R[j]))).toFixed(3)})`;
+      }
+      return { bottom: cy[0]+offY+H[0]/2*Math.cos(R[0]) };
+    }
+
+    function applyGallery(pc, g){
+      const CX=innerWidth/2;
+      // --- Video: erscheint mittig (Ende Kamera), gleitet LANGSAM nach links raus, spielt weiter ---
+      let videoLeftEdge = -1e9;
+      if(pc<CUT){
+        videoPlayer.style.opacity='0';
+      } else {
+        const vEx = cl(g/VID_EXIT,0,1);
+        const vW = videoPlayer.offsetWidth||1000;
+        const vOff = smooth(vEx)*(vW+20);        // gleitet im Loch nach links raus (Ellipsen-Clip)
+        videoLeftEdge = CX - vOff - vW/2;        // linke Kante des Videos in Viewport-x
+        videoPlayer.style.transform = `translateX(${(-vOff).toFixed(0)}px)`;
+        videoPlayer.style.opacity = (vEx<1)?'1':'0';
+      }
+      const wantVideo = (pc>=CUT) && (g<=VID_EXIT+0.03);
+      if(wantVideo!==videoShown){ videoShown=wantVideo; videoPlayer.classList.toggle('show',wantVideo); }
+      if(wantVideo!==videoPlaying){
+        videoPlaying=wantVideo;
+        if(wantVideo){ if(video && video.currentSrc){ video.muted=muted; video.play().catch(()=>{}); } }
+        else { try{ video && video.pause(); }catch(_){} }
+      }
+
+      // --- Motiv erscheint ERST wenn die linke Videokante den Bildschirmrand erreicht; verschwindet zu Beginn der Lauf-Anim schnell ---
+      const picIn = cl(((CX-Wc/2)-(videoLeftEdge+(videoPlayer.offsetWidth||1000)))/80,0,1); // rechte Videokante verlässt die Hörner (linke Motivkante) -> Motiv fadet ein
+      const runnerMix = cl((g-RUN_START)/0.015,0,1);   // statisches Motiv -> Daumenkino (sitzend, deckungsgleich)
+      centerpic.style.opacity = String((pc>=CUT?1:0) * picIn * (1-runnerMix));
+
+      // --- Zug aus 4 gleichen, nahtlosen Kästen; box1 führt (links). Rechts -> links komplett durch ---
+      const tt = cl((g-TRAIN_START)/(TRAIN_END-TRAIN_START),0,1);
+      const trainX = innerWidth + (-(4*Wc) - innerWidth)*tt;   // linke Kante von box1
+      for(let i=0;i<4;i++){ boxes[i].style.transform = `translate(${(trainX+i*Wc).toFixed(1)}px,-50%)`; }
+
+      // --- Skizze (Hover) nur dort, wo ein Skizzen-Kasten (box1/box3) das Motiv überdeckt ---
+      const Lc=CX-Wc/2, Rc=CX+Wc/2;
+      let bandL=null, bandR=null;
+      for(const i of [0,2]){
+        const bxL=trainX+i*Wc, bxR=bxL+Wc;
+        const oL=Math.max(bxL,Lc), oR=Math.min(bxR,Rc);
+        if(oR>oL){ bandL=oL; bandR=oR; }
+      }
+      if(bandL===null){ cpSketch.style.clipPath='inset(0 100% 0 0)'; }
+      else{ cpSketch.style.clipPath = `inset(0 ${Math.max(0,Rc-bandR).toFixed(1)}px 0 ${Math.max(0,bandL-Lc).toFixed(1)}px)`; }
+      // Bleistift-Geräusch nur, solange die Skizze zu sehen ist UND der nächste Kasten noch nicht wieder das Original zeigt
+      // (Band reicht bis zur rechten Motivkante; sobald der folgende Original-Kasten rechts hereinkommt -> sofort aus)
+      const sketchOn = bandL!==null && (bandR-bandL)>4 && bandR>=Rc-0.5 && parseFloat(centerpic.style.opacity||'0')>0.5;
+      if(sketchOn!==pencilOn){ pencilOn=sketchOn; if(window.pencilSound) pencilSound(sketchOn); }
+
+      // --- Läufer-Daumenkino: scroll-gescrubbt Frame 0..53 (sitzen -> aufstehen -> nach links rausrennen).
+      //     Die Translation steckt in den Frames -> transform bleibt die in sizeBoxes gesetzte Basis ---
+      if(runnerMix<=0){ runner.style.opacity='0'; lastRunFrame=-1; }
+      else{
+        runner.style.opacity = String(runnerMix);
+        // 4x4-Sprite: Reihe1 sitzen, Reihe2 aufstehen (Frames 0..7 scrollgetrieben),
+        // Reihe3/4 rennen (Frames 8..15 zeitbasiert) + folgt box4 im gleichen Scrolltempo nach links
+        let frame, offX=0;
+        if(g<STAND_END){ frame=Math.round(cl((g-RUN_START)/(STAND_END-RUN_START),0,1)*7); }
+        else{
+          frame = 8 + (Math.floor(performance.now()/150)%8);
+          const RATE=(innerWidth+4*Wc)/(TRAIN_END-TRAIN_START);
+          offX = RATE*(g-STAND_END);
+        }
+        // Schritt-Klang erst beim Losrennen (Fußaufsatz Frames 8, 12); aus, sobald die Figur hinter den linken Kissen ist
+        // (Figur-Rechtskante ≤ 0.92 der Zellbreite, gemessen; Loch-Innenkante links = ring.left + 0.117·Breite)
+        const rb=runner.getBoundingClientRect(), rgb=ringWrap.getBoundingClientRect();
+        const visibleInHole = rb.left + 0.92*rb.width > rgb.left + 0.117*rgb.width;
+        if(frame!==lastRunFrame){
+          if((frame===8 || frame===12) && visibleInHole && window.stepSound) stepSound();
+          lastRunFrame=frame;
+        }
+        const col=frame%4, row=(frame/4|0);
+        runner.style.backgroundPosition = `${(col*100/3).toFixed(2)}% ${(row*100/3).toFixed(2)}%`;
+        runner.style.transform = `translate(calc(-50% - ${offX.toFixed(0)}px),-50%)`;
+      }
+
+      // --- Glas: kommt nach dem Läufer aus der Ferne in die Mitte (t 0..1 treibt die three-Szene) ---
+      const gt = cl((g-GLASS_START)/GLASS_SPAN,0,1);
+      window.__glass.t = gt;
+      const glassOn = (g>GLASS_START && pc>=CUT);
+      glassEl.style.opacity = glassOn ? '1' : '0';
+      glassEl.style.visibility = glassOn ? 'visible' : 'hidden';
+
+      // --- Foto-Galerie: Fächer fährt nach der Karussell-Runde von oben einmal durchs Loch und unten raus.
+      //     Das offene Bild wandert mit; die nächsten klappen nacheinander auf. Sie verdrängt Karussell + Glas nach unten. ---
+      const PHO_START = GLASS_START + GLASS_SPAN + CAR_SPAN;
+      if(!photosLoaded && g > GLASS_START){ photosLoaded=true; pcards.forEach(c=>{ const im=c.querySelector('img'); im.src=im.dataset.src; if(im.decode) im.decode().catch(()=>{}); }); }  // vorab dekodieren -> kein grauer Blitz
+      const rrG=ringWrap.getBoundingClientRect(), hxG=0.3825*rrG.width, hyG=0.425*rrG.height, CYg=innerHeight/2;
+      let push=0;
+      // display statt visibility: die Karten setzen einzeln visibility:visible und würden sonst durchscheinen
+      // (Bug: nach einem Balken-Sprung aus der Galerie blieben sie eingefroren stehen)
+      if(pc<CUT || g<PHO_START){ photoGal.style.display='none'; }
+      else{
+        photoGal.style.display=''; photoGal.style.visibility='visible';
+        const ph=cl((g-PHO_START)/PHO_SPAN,0,1);
+        const fan=layoutFan(ph, CX, CYg, hxG, hyG);
+        const galBottom=fan.bottom;
+        // Verdrängen: sobald die Unterkante des Fächers die Karussell-Oberkante erreicht, schiebt sie alles mit nach unten
+        const sceneTop=CYg-(0.34*hyG+0.62*Math.min(hxG*0.34,240));
+        const push1=Math.max(0, galBottom+26-sceneTop);                  // 1. Stoß: Fächer drückt beim Hereinkommen
+        // Stoß: während Bild 1 zur Mitte fährt, wird das Karussell samt Glas schnell ganz nach unten rausgeschoben
+        const pushOut=Math.max(CYg+hyG-sceneTop, hyG+0.2*Hc)+60;
+        const sh=cl((ph-(FAN_FLIP?0.067:0.025))/0.06,0,1), shE=1-Math.pow(1-sh,3);   // easeOut = kräftiger Anstoß, weich auslaufend
+        push=Math.max(push1, pushOut*shE);
+      }
+      glassEl.style.transform = push ? `translateY(${push.toFixed(1)}px)` : '';
+
+      // --- Video-Karussell: Videos kommen ab der Hälfte des Glas-Anflugs nacheinander AUS dem Glas
+      //     und gleiten an ihren Karussell-Platz; das letzte startet, wenn das Glas ganz da ist. Dann 1 Drehung. ---
+      const CAR_START = GLASS_START + GLASS_SPAN;
+      const car = cl((g-CAR_START)/CAR_SPAN,0,1);
+      window.__glass.car = car;
+      // Einschenk-Geräusch, solange das Glas sich bis zum Schaum füllt (gleiche Füllkurve wie js/glass.js: car 0.06..0.68)
+      const fillNow = cl((car-0.06)/0.62,0,1), pourOn = glassOn && fillNow>0.005 && fillNow<0.995;
+      if(pourOn!==pourPrev){ pourPrev=pourOn; if(window.pourSound) pourSound(pourOn, fillNow); }
+      const EM_DUR = 0.28*GLASS_SPAN;                                // Gleitdauer je Video (in g)
+      // Reihenfolge nach Tiefe im Karussell (Drehung 0): die HINTEREN Videos kommen zuerst aus dem Glas, die vorderen zuletzt
+      const emStart = (i)=>GLASS_START + GLASS_SPAN*(0.5 + EM_RANK[i]*0.1);   // Rang 0 bei t=0.5 … Rang 5 bei t=1.0
+      const outZ=[];                                             // voll ausgetretene Karten mit Tiefe
+      if(pc<CUT || g<GLASS_START+0.5*GLASS_SPAN){   // vor dem ersten Austritt (Rang 0)
+        for(const c of cards){ c.style.opacity='0'; c.style.visibility='hidden'; } }
+      else{
+        const rr=ringWrap.getBoundingClientRect(), hx=0.3825*rr.width, hy=0.425*rr.height;
+        const R=hx*0.5, P=1100, CYc=innerHeight/2, YS=0.72;           // enger ums Glas (weniger Anschnitt an den Kissen)
+        const baseW=Math.min(hx*0.34, 240), rot=car*Math.PI*2;
+        // Austrittspunkt = Kelchmitte des Glases (aktuelle Anflug-Größe wie im three-Modul)
+        const gt2=cl((g-GLASS_START)/GLASS_SPAN,0,1), eG=1-Math.pow(1-gt2,3), scG=Math.pow(0.03,1-eG);
+        // Austrittspunkt = ÖFFNUNG des Glases: Rand liegt 0.5·Glashöhe über der Mitte (Radius 0.236·H),
+        // dreht mit der Kopfüber-Rotation (θ = t·2π) mit -> bei t=0.5 zeigt die Öffnung nach unten
+        const glassH=0.4*Hc*scG, th0=gt2*Math.PI*2;
+        const rimY=CYc+push-0.5*glassH*Math.cos(th0), rimR=0.236*glassH;
+        cards.forEach((c,i)=>{
+          const u=cl((g-emStart(i))/EM_DUR,0,1);
+          if(u<=0){ c.style.opacity='0'; c.style.visibility='hidden'; return; }
+          c.style.visibility='visible';
+          const e=1-Math.pow(1-u,3);                                   // easeOut: schnell raus, weich ankommen
+          const k=CARD[i], th=k.a*Math.PI/180 + rot;
+          const x=-Math.sin(th)*R*k.r, z=Math.cos(th)*R*k.r;          // vorn (z>0) wandert nach links
+          const sFin=P/(P-z), w=baseW*k.w;
+          const fx=CX + x*sFin, fy=CYc + push + k.y*hy*YS*sFin;        // Ziel-Mitte im Karussell (+ Verdrängung)
+          const phi=k.a*Math.PI/180;                                   // jede Karte von einer anderen Stelle des Rands
+          const ox=CX - Math.sin(phi)*rimR, oy=rimY + Math.cos(phi)*rimR*0.35*Math.abs(Math.sin(th0)+0.4);
+          const cx=ox+(fx-ox)*e, cy=oy+(fy-oy)*e, s=sFin*(0.08+0.92*e);
+          c.style.width=w.toFixed(1)+'px';
+          c.style.transformOrigin='0 0';
+          c.style.transform=`translate(${(cx-w*s/2).toFixed(1)}px,${(cy-w*0.75*s/2).toFixed(1)}px) scale(${s.toFixed(3)})`;
+          c.style.zIndex = z>0 ? '19' : '17';                          // vorn vor dem Glas, hinten dahinter
+          const back=cl(-z/(R*1.1),0,1)*e;
+          c.style.setProperty('--milk',(back*0.55).toFixed(2));
+          c.style.filter = back>0.02 ? `blur(${(back*2.2).toFixed(1)}px)` : 'none';
+          c.style.opacity=String(cl(u*5,0,1));
+          if(u>=1) outZ.push([i,z]);
+        });
+      }
+      // nur das vorderste Video ist anklickbar (und nur solange der Player zu ist)
+      // die DREI vordersten Videos sind anklickbar (nur solange der Player zu ist)
+      const front = (window.__vpOpen || push>4) ? [] : outZ.sort((a,b)=>b[1]-a[1]).slice(0,3).map(a=>a[0]);
+      window.__frontCard = front.length ? front[0] : -1;
+      cards.forEach((c,i)=>c.classList.toggle('front', front.includes(i)));
+    }
+
+    // --- Scroll-Orientierung rechts (Start · 3D · About · Video · Galerie) ---
+    // Grenzen in curP: Video = Video erscheint (Ende Kamerafahrt); About = Skulptur erscheint (früh in der Galerie)
+    const segEls=[...document.querySelectorAll('#progress .seg')];
+    const fillEls=segEls.map(s=>s.querySelector('.fill'));
+    // Abschnitte (in curP): start | 3D (ab Video im Loch) | about (Skulptur voll da) | video (Glas + Karussell) | galerie
+    let secCur=-2;
+    const secBounds=()=>{ const G=(g)=>F+g*(1-F);
+      return [0, CUT*F, G(TRAIN_START), G(GLASS_START), G(GLASS_START+GLASS_SPAN+CAR_SPAN), 1]; };
+    // Klick auf einen Balken: direkt zum Anfang des Abschnitts springen (ohne die Strecke dazwischen durchzufahren)
+    segEls.forEach((seg,i)=>seg.querySelector('.hit').addEventListener('click',()=>{
+      if(window.__vpOpen && window.__closePlayer) window.__closePlayer(true);   // offener Video-Player blockiert sonst den Sprung
+      loadGlass();                                                              // Sprung kann direkt ins Glas führen
+      // 3D: erst wenn die Kamera ganz ausgeblendet ist (Video im Loch voll da)
+      const m=document.documentElement.scrollHeight-innerHeight, P=Math.min(i===1 ? F : secBounds()[i]+(i?0.0008:0),1);
+      scrollTo(0,P*m); targetP=P; curP=P;
+    }));
+    function updateProgress(p){
+      const SEC=secBounds();
+      for(let i=0;i<fillEls.length;i++){
+        fillEls[i].style.transform='scaleY('+cl((p-SEC[i])/(SEC[i+1]-SEC[i]),0,1).toFixed(3)+')';
+      }
+      let cur=0; for(let i=1;i<fillEls.length;i++) if(p>=SEC[i]) cur=i;
+      if(cur!==secCur){ secCur=cur; segEls.forEach((s,i)=>s.classList.toggle('on', i<=cur)); }
+    }
+
+    (function loop(){
+      curP += (targetP-curP)*0.09; if(Math.abs(targetP-curP)<1e-5) curP=targetP; if(curP<0)curP=0;
+      if(!glassLoaded && curP>=F*0.97) loadGlass();
+      const pc = cl(curP/F,0,1);
+      const g  = cl((curP-F)/(1-F),0,1);
+      applyCamera(pc);
+      applyGallery(pc,g);
+      updateProgress(curP);
+      requestAnimationFrame(loop);
+    })();
+  })();
+</script>
+
+<!-- ============ Glas-Objekt (glass-transp.glb) – Schluss-Szene: aus der Ferne in die Mitte, 1 Umdrehung ============ -->
+<!-- Glas-3D: js/glass.js, nachgeladen vom scrollDirector (loadGlass), sobald die Galerie beginnt -->
+<script>
+  /* ============ Karussell-Video öffnen / schließen ============
+     Hover über dem vordersten Video -> „open" (weiß); Klick -> Player wächst aus der Karte bis fast an die Kissen.
+     Solange offen: Scroll gesperrt, außerhalb Hover „close" (schwarz); Klick daneben -> zurück in die Karte, Scroll läuft weiter. */
+  (function(){
+    const cards=[...document.querySelectorAll('.vcard')];
+    const lbl=document.getElementById('hoverLbl'), vp=document.getElementById('vplayer'),
+          vpc=document.getElementById('vpCatch'), vpLabel=document.getElementById('vpLabel'), ring=document.getElementById('ringWrap');
+    let openCard=null, busy=false;
+    const setLbl=(txt,cls)=>{ lbl.textContent=txt; lbl.className='hoverLbl '+cls; lbl.style.opacity=txt?'1':'0'; };
+    addEventListener('pointermove',e=>{ lbl.style.transform=`translate(${e.clientX+18}px,${e.clientY-10}px)`; });
+    function cardRect(c){ return c.getBoundingClientRect(); }
+    function targetRect(){
+      // 4:3-Rechteck in der Loch-Ellipse, Ecken knapp vor den Kissen
+      const r=ring.getBoundingClientRect(), rx=0.3825*r.width, ry=0.425*r.height;
+      const hw=0.95/Math.sqrt(1/(rx*rx)+0.5625/(ry*ry)), w=2*hw, h=w*0.75;
+      return {left:innerWidth/2-w/2, top:innerHeight/2-h/2, width:w, height:h};
+    }
+    function place(r, T){ vp.style.width=T.width+'px';
+      const s=r.width/T.width; vp.style.transform=`translate(${r.left}px,${r.top}px) scale(${s})`; }
+    // Scroll-Sperre: Position merken und halten (overflow:hidden würde die Seite auf 0 zurücksetzen)
+    let lockY=0;
+    function lock(on){ if(on) lockY=scrollY; }
+    addEventListener('scroll',()=>{ if(window.__vpOpen && Math.abs(scrollY-lockY)>0.5) scrollTo(0,lockY); });
+    // Scroll-Sperre auch für Touch/Tastatur (overflow:hidden allein reicht auf Touch-Geräten nicht)
+    const stop=e=>{ if(window.__vpOpen) e.preventDefault(); };
+    addEventListener('wheel',stop,{passive:false}); addEventListener('touchmove',stop,{passive:false});
+    addEventListener('keydown',e=>{ if(window.__vpOpen && [' ','ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key)) e.preventDefault(); });
+    cards.forEach((c,i)=>{
+      c.addEventListener('pointerenter',()=>{ if(c.classList.contains('front') && !openCard) setLbl('open','open'); });
+      c.addEventListener('pointerleave',()=>{ if(!openCard) setLbl('',''); });
+      c.addEventListener('pointermove',()=>{ if(!openCard) setLbl(c.classList.contains('front')?'open':'', 'open'); });
+      c.addEventListener('click',()=>{
+        if(!c.classList.contains('front') || openCard || busy) return;
+        openCard=c; busy=true; window.__vpOpen=true; lock(true);
+        vpLabel.textContent=c.querySelector('.vph').textContent;
+        const T=targetRect();
+        vp.style.transition='none'; vp.style.display='block'; place(cardRect(c),T);
+        c.style.visibility='hidden';
+        vp.offsetWidth;                                   // reflow -> Transition greift
+        vp.style.transition=''; place(T,T);
+        vpc.classList.add('on'); setLbl('close','close');
+        const v=vp.querySelector('video'); if(v.currentSrc){ v.play().catch(()=>{}); }
+        setTimeout(()=>busy=false,600);
+      });
+    });
+    vp.addEventListener('pointerenter',()=>{ if(openCard) setLbl('',''); });
+    vp.addEventListener('pointerleave',()=>{ if(openCard) setLbl('close','close'); });
+    vpc.addEventListener('pointermove',()=>{ if(openCard && lbl.textContent!=='close') setLbl('close','close'); });
+    function closePlayer(instant){
+      if(!openCard) { window.__vpOpen=false; busy=false; return; }
+      if(busy && !instant) return;
+      busy=true; const c=openCard;
+      vpc.classList.remove('on'); setLbl('','');
+      try{ vp.querySelector('video').pause(); }catch(_){}
+      const done=()=>{ vp.style.display='none'; c.style.visibility=''; openCard=null; busy=false;
+        window.__vpOpen=false; lock(false); };
+      if(instant){ vp.style.transition='none'; done(); return; }
+      place(cardRect(c), targetRect());                  // zurück in die Karte
+      setTimeout(()=>{ if(openCard===c) done(); },600);
+    }
+    window.__closePlayer=closePlayer;
+    vpc.addEventListener('click',()=>closePlayer(false));
+    addEventListener('keydown',e=>{ if(e.key==='Escape' && window.__vpOpen) closePlayer(false); });
+  })();
+</script>
+<script>
+  /* ============ Foto-Variante des Glases: startpage.html?glass=photo ============
+     Foto (freigestellt, 409x907) + Champagner/Schaum/Perlen per 2D-Canvas (source-atop -> nur innerhalb des Glases).
+     Kelch-Geometrie im Foto gemessen: Mitte x203, Rand-Ellipse Mitte y91 (rx198, ry88), Kegel-Spitze y422, Boden innen y381. */
+  (function(){
+    if(new URLSearchParams(location.search).get('glass')!=='photo') return;
+    window.__glassPhoto = true;
+    const el=document.getElementById('glassPhoto'), cv=document.getElementById('glassPhotoCv'), ctx=cv.getContext('2d');
+    const holder=document.getElementById('glass3d'), fig=document.getElementById('centerpic');
+    el.style.display='block';
+    const img=new Image(); img.src='assets/img/glass-photo.webp';
+    const CXg=203, YR=91, RX=198, AR=88/198, YA=422, YB=381, Y_MAX=128;
+    const rxAt=(y)=>Math.max(0,RX*(YA-y)/(YA-YR));
+    // Schaum-Muster
+    const fp=document.createElement('canvas'); fp.width=fp.height=64; const fg=fp.getContext('2d');
+    fg.fillStyle='#fffaf0'; fg.fillRect(0,0,64,64);
+    for(let i=0;i<70;i++){ fg.beginPath(); fg.arc(Math.random()*64,Math.random()*64,1+Math.random()*3.5,0,7);
+      fg.fillStyle='rgba(255,255,255,.9)'; fg.fill(); fg.strokeStyle='rgba(205,180,120,.55)'; fg.lineWidth=.8; fg.stroke(); }
+    let foamPat=null;
+    const bub=[...Array(40)].map(()=>({x:Math.random()*2-1, p:Math.random(), v:.4+Math.random()*.8}));
+    function slab(y1,y2){          // Körper zwischen zwei Füllhöhen (y1 oben, y2 unten) inkl. vorderer Bogen unten
+      const r1=rxAt(y1), r2=rxAt(y2);
+      ctx.beginPath(); ctx.moveTo(CXg-r1,y1); ctx.lineTo(CXg-r2,y2);
+      ctx.ellipse(CXg,y2,Math.max(r2,.01),Math.max(r2*AR,.01),0,Math.PI,0,true);
+      ctx.lineTo(CXg+r1,y1); ctx.closePath();
+    }
+    function ell(y){ const r=rxAt(y); ctx.beginPath(); ctx.ellipse(CXg,y,Math.max(r,.01),Math.max(r*AR,.01),0,0,Math.PI*2); }
+    let tS=0,cS=0;
+    const sm=u=>u*u*(3-2*u), c01=v=>Math.min(1,Math.max(0,v));
+    (function frame(now){
+      const g=window.__glass||{}; tS+=((g.t||0)-tS)*.15; cS+=((g.car||0)-cS)*.15;
+      const on=holder.style.opacity==='1';
+      el.style.opacity=on?'1':'0';
+      if(on && img.complete){
+        // Größe = 0.4 × Figurhöhe; Anflug aus der Ferne, eine Umdrehung kopfüber, Schwanken beim Karussell
+        const H=(fig.offsetHeight||innerHeight*.64)*0.4; el.style.height=H.toFixed(1)+'px';
+        const e=1-Math.pow(1-tS,3), sc=Math.pow(0.03,1-e);
+        const sway=Math.sin(cS*Math.PI*4)*7.4;
+        el.style.transform=`translate(-50%,-50%) perspective(900px) scale(${sc.toFixed(4)}) rotateX(${(tS*360).toFixed(1)}deg) rotateZ(${sway.toFixed(2)}deg)`;
+        // Zeichnen
+        ctx.globalCompositeOperation='source-over'; ctx.clearRect(0,0,409,907); ctx.drawImage(img,0,0);
+        ctx.globalCompositeOperation='source-atop';
+        const fill=sm(c01((cS-0.06)/0.62));
+        if(fill>0.01){
+          const yF=YB-(YB-Y_MAX)*fill;
+          const foamH=(6+34*fill)*1.0, yT=Math.max(yF-foamH, YR+6);
+          // Champagner
+          slab(yF,YB); ctx.fillStyle='rgba(246,214,120,.58)'; ctx.fill();
+          ell(yF); ctx.fillStyle='rgba(252,232,165,.75)'; ctx.fill();
+          // Perlen
+          ctx.fillStyle='rgba(255,252,235,.9)';
+          for(const b of bub){ const y=YB-((b.p+now*0.00006*b.v)%1)*(YB-yF); const r=rxAt(y)*0.8;
+            ctx.beginPath(); ctx.arc(CXg+b.x*r, y, 1.3, 0, 7); ctx.fill(); }
+          // Schaum (wächst mit, bleibt am Ende groß)
+          if(!foamPat) foamPat=ctx.createPattern(fp,'repeat');
+          slab(yT,yF); ctx.fillStyle=foamPat; ctx.globalAlpha=.94; ctx.fill();
+          ell(yT); ctx.fill(); ctx.globalAlpha=1;
+          ell(yT); ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
+        }
+      }
+      requestAnimationFrame(frame);
+    })(performance.now());
+  })();
+</script>
+</body>
+</html>

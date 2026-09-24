@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>nihanzo — loading</title>
+
+  <!-- ============================================================
+       LOADING PAGE (Prototyp, eigenständig)
+       - Hintergrund: bearbeitete Platte (assets/img/bg-plate.jpg)
+       - freigestellte Gans (assets/img/goose.png) mit sanftem Wind-Gleitflug
+       - "Altes Microsoft" Ladebalken, 0–100 %, bündig mit den Buttons
+       - Buttons erscheinen bei 100 % (Platz ist reserviert -> kein Verrutschen)
+       - Schrift: Animo (assets/fonts/animo/Animo.otf), kleingeschrieben
+       ============================================================ -->
+
+  <style>
+    /* eigene Schrift: Animo */
+    @font-face{
+      font-family: 'Animo';
+      src: url('assets/fonts/animo/Animo.otf') format('opentype');
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+
+    :root{
+      --bg:      #D3DAC3;   /* Grundfarbe / Fallback hinter dem Bild */
+      --ink:     #C0545B;   /* Fontfarbe (rötlich) */
+      --bevel-d: #969D84;
+      --bevel-l: #EBEFE2;
+      --track:   #C6CEB0;
+      --edge:    #7E8568;
+      --font: 'Animo', Georgia, serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg) url("assets/img/bg-plate.jpg?v=7") center center / cover no-repeat fixed;
+      color: var(--ink);
+      font-family: var(--font);
+      text-transform: lowercase;             /* kleingeschrieben */
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---------- Bühne ---------- */
+    .stage{
+      position: relative; z-index: 2; min-height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 30px; padding: 40px 24px;
+    }
+
+    /* ---------- Gans (freigestelltes PNG + sanfter Wind) ---------- */
+    .goose{
+      width: min(78vw, 400px);
+      animation: glide 6.5s ease-in-out infinite;
+      will-change: transform;
+    }
+    .goose img{ width: 100%; height: auto; display: block; filter: url(#wind); }
+    .goose__ph{
+      display: none; aspect-ratio: 944/704; place-items: center; text-align: center;
+      border: 1px dashed var(--edge); color: var(--edge); font-size: .8rem; padding: 20px;
+      background: rgba(211,218,195,.7);
+    }
+    @keyframes glide{
+      0%   { transform: translateY(0)     rotate(-0.5deg); }
+      50%  { transform: translateY(-11px) rotate(0.6deg);  }
+      100% { transform: translateY(0)     rotate(-0.5deg); }
+    }
+
+    /* ---------- Konsole: Balken + Buttons teilen dieselbe Breite ----------
+       Breite = fit-content -> richtet sich nach dem breitesten Kind (den Buttons).
+       Der Balken bekommt width:100% -> exakt so breit wie die Buttons (bündig). */
+    .console{
+      display: flex; flex-direction: column; align-items: center;
+      width: fit-content; max-width: 92vw; margin: 0 auto; gap: 14px;
+    }
+
+    /* ---------- "Altes Microsoft" Ladebalken ---------- */
+    .ms{ width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .ms__bar{
+      width: 100%; height: 24px; padding: 3px;
+      background: var(--track);
+      box-shadow: inset 2px 2px 0 var(--bevel-d), inset -2px -2px 0 var(--bevel-l);
+      display: flex; gap: 2px;
+    }
+    .ms__block{ flex: 1 1 0; background: transparent; }
+    .ms__block.on{ background: var(--ink); }
+    .ms__pct{ font-size: 1.1rem; letter-spacing: .04em; text-align: center; }
+    .ms__pct .pct-sign{ font-family: Georgia, 'Times New Roman', serif; }  /* Animo hat kein %-Zeichen */
+
+    /* ---------- Sound-Buttons: Platz von Anfang an reserviert (visibility) ----------
+       -> beim Erscheinen rutscht nichts nach oben, sie werden nur sichtbar. */
+    .enter{ display: flex; gap: 12px; justify-content: center; flex-wrap: nowrap; visibility: hidden; }
+    .enter.show{ visibility: visible; }
+    .snd{
+      font-family: var(--font); font-size: .84rem; letter-spacing: .03em; white-space: nowrap;
+      color: var(--ink); background: transparent;
+      border: 1.5px solid var(--ink); padding: 9px 18px; cursor: pointer;
+      transition: background .25s ease, color .25s ease;
+    }
+    .snd:hover{ background: var(--ink); color: #fff; }
+    .hint{ font-size: .74rem; letter-spacing: .05em; opacity: .6; visibility: hidden; }
+    .hint.show{ visibility: visible; }
+
+    @media (prefers-reduced-motion: reduce){ .goose{ animation: none; } }
+  </style>
+</head>
+<body>
+  <!-- SVG-Filter für den Wind (unsichtbar) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="wind">
+      <feTurbulence type="fractalNoise" baseFrequency="0.009 0.013" numOctaves="2" seed="7" result="noise">
+        <animate attributeName="baseFrequency" dur="9s" repeatCount="indefinite"
+                 values="0.009 0.013; 0.013 0.02; 0.009 0.013" />
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="8"
+                         xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+
+  <div class="stage">
+    <!-- Gans -->
+    <div class="goose">
+      <img src="assets/img/goose.png" alt="Fliegende Gans mit Nils"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';" />
+      <div class="goose__ph">bitte <b>assets/img/goose.png</b> ablegen (transparentes PNG)</div>
+    </div>
+
+    <!-- Konsole: Balken + % + Buttons + Hinweis (alle gleiche Breite) -->
+    <div class="console">
+      <div class="ms">
+        <div class="ms__bar" id="bar" aria-hidden="true"></div>
+        <div class="ms__pct" role="status" aria-live="polite"><span id="pctNum">0</span><span class="pct-sign">%</span></div>
+      </div>
+      <div class="enter" id="enter">
+        <button class="snd" data-sound="on" type="button">&#9654;&nbsp; enter with sound</button>
+        <button class="snd" data-sound="off" type="button">enter without sound</button>
+      </div>
+      <p class="hint" id="hint">best with sound</p>
+    </div>
+  </div>
+
+  <script>
+  (function loader(){
+    const BLOCKS = 22;
+    const bar    = document.getElementById('bar');
+    const pctNum = document.getElementById('pctNum');
+    const enter  = document.getElementById('enter');
+    const hint   = document.getElementById('hint');
+
+    const cells = [];
+    for (let k = 0; k < BLOCKS; k++){
+      const c = document.createElement('div');
+      c.className = 'ms__block';
+      bar.appendChild(c); cells.push(c);
+    }
+
+    const DURATION = 5200;
+    const start = performance.now();
+
+    function render(p){
+      pctNum.textContent = Math.round(p);
+      const lit = Math.round(p / 100 * BLOCKS);
+      cells.forEach((c, k) => c.classList.toggle('on', k < lit));
+    }
+    function tick(now){
+      const base = Math.min((now - start) / DURATION, 1);
+      const jitter = base < 1 ? (Math.random() * 1.2) : 0;
+      render(Math.min(base * 100 + jitter, 100));
+      if (base < 1) requestAnimationFrame(tick);
+      else finish();
+    }
+    function finish(){
+      render(100);
+      enter.classList.add('show');   // Buttons nur sichtbar machen (Platz war reserviert)
+      hint.classList.add('show');
+    }
+    enter.addEventListener('click', (e) => {
+      const btn = e.target.closest('.snd'); if (!btn) return;
+      const withSound = btn.dataset.sound === 'on';
+      const stage = document.querySelector('.stage');
+      stage.style.transition = 'opacity .8s ease';
+      stage.style.opacity = '0';
+      console.log('Eintritt in die Seite. Sound:', withSound ? 'AN' : 'AUS');
+    });
+
+    requestAnimationFrame(tick);
+  })();
+  </script>
+</body>
+</html>
