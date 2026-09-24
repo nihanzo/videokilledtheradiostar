@@ -4,7 +4,7 @@
     {
       "name": "nihanzo-site",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8756"],
+      "runtimeArgs": [".claude/devserver.py", "8756"],
       "port": 8756
     }
   ]

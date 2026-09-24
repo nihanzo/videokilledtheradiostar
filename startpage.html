@@ -52,7 +52,9 @@
   /* Kette – fliegt per Zoom ums Kettenloch Richtung Bildschirm (über den Kissen); Kamera wächst gleichzeitig mit */
   .chainWrap{
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:clamp(360px,41vw,730px); aspect-ratio:819 / 534; z-index:45; pointer-events:none;
+    /* Layout 2.5× so groß wie die sichtbare Kette, per JS auf 1/2.5 verkleinert: Chrome rastert will-change-Ebenen
+       mind. in Layoutgröße -> die Kette bleibt beim Heranzoomen bis ~2.5× scharf (4K-Bild, ohne Kosten pro Frame) */
+    width:calc(clamp(360px,41vw,730px) * 2.5); aspect-ratio:819 / 534; z-index:45; pointer-events:none;
     will-change:transform;
   }
   /* chain-fly.webp = chain-trim (819×534) + 48px Rand mit EINGEBACKENEM Schatten/Kontrast (vorher CSS-filter:
@@ -158,9 +160,9 @@
 
   /* Sound-Control: Equalizer mittig oben am Viewport-Rand (Balken hängen nach unten) */
   .eq{
-    position:fixed; left:50%; top:10px; transform:translateX(-50%) rotate(180deg); transform-origin:center center;
-    z-index:70; pointer-events:none;
-    display:flex; align-items:flex-start; gap:7px; height:40px;
+    position:fixed; left:50%; top:2px; transform:translateX(-50%) rotate(180deg); transform-origin:center center;
+    z-index:70; pointer-events:auto; cursor:none; padding:8px 10px;    /* Klick = Ton an/aus (Padding = Trefferfläche) */
+    display:flex; align-items:flex-start; gap:7px; height:56px;   /* 40px Balken + 2×8px Padding (border-box) */
   }
   .eq .bar{ width:5px; height:100%; background:var(--accent); border-radius:2.5px; opacity:.92;
     transform-origin:50% 0; transform:scaleY(.6); will-change:transform;
@@ -190,9 +192,6 @@
   .vplayer .vph{ position:absolute; inset:0; display:grid; place-items:center;
     background:radial-gradient(120% 120% at 40% 30%,#34323a,#111014);
     color:#f4f4e1; font-family:'Animo',system-ui,sans-serif; font-size:16px; letter-spacing:.18em; text-transform:uppercase; }
-  .eq__label{ position:fixed; z-index:71; pointer-events:none; opacity:0; transition:opacity .2s ease;
-    font-family:'Animo',system-ui,sans-serif; color:var(--accent); font-size:13px;
-    letter-spacing:.14em; text-transform:uppercase; text-shadow:0 1px 2px rgba(255,255,255,.5); }
 
   /* Scroll-Orientierung rechts am Rand: Start · 3D · About · Video · Galerie (dickere Balken, Animo + Akzent) */
   .progress{ position:fixed; right:16px; top:50%; transform:translateY(-50%);
@@ -252,6 +251,26 @@
     transform:translate(-200px,-200px); will-change:transform; opacity:.96; }
   #cursor img{ width:100%; height:auto; display:block; filter:drop-shadow(0 2px 5px rgba(0,0,0,.35)); }
 
+  /* ---------- Vorhang-Intro (ehem. curtain.html): Grünkohl + Titel fliegen raus, die Creme löst sich per Regentropfen
+     von rechts nach links auf und legt DIESE Startseite frei. Liegt in .stage direkt unter dem Cursor (z 9999). ---------- */
+  #curtain{ position:absolute; inset:0; z-index:9990; }
+  #curtainGl{ position:absolute; inset:0; width:100%; height:100%; display:block; background:#F4F4E1; }
+  #curtain .hero{ position:absolute; inset:0; display:grid; place-items:center; will-change:transform; }
+  #curtain .hero__wrap{ position:relative; width:min(1150px,94vw); }
+  #curtain .hero__kale{ width:100%; height:auto; display:block; filter:drop-shadow(0 18px 30px rgba(0,0,0,.18)); }
+  #curtain .hero__title{ position:absolute; left:50%; top:46%; transform:translate(-50%, calc(-50% - 16px));
+    display:flex; align-items:center; justify-content:center; gap:.04em; filter:drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
+  #curtain .type{ height:clamp(46px,10vw,116px); background-color:#F4F4E1;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center;
+    -webkit-mask-size:contain; mask-size:contain; }
+  #curtain .type.sinc{ aspect-ratio:1986/760; -webkit-mask-image:url("assets/img/type-sinc.svg"); mask-image:url("assets/img/type-sinc.svg"); }
+  #curtain .type.moir{ aspect-ratio:1970/760; -webkit-mask-image:url("assets/img/type-moir.svg"); mask-image:url("assets/img/type-moir.svg"); }
+  #curtain .re{ height:clamp(64px,14vw,168px); width:auto; display:block; margin:0 .01em; align-self:center; }
+  #curtain .hero__subtitle{ position:absolute; left:50%; top:100%; transform:translate(-50%, clamp(16px,4vw,48px));
+    display:flex; align-items:center; justify-content:center; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
+  #curtain .type.video{ aspect-ratio:2279/760; height:clamp(24px,5vw,58px); background-color:#C65563;
+    -webkit-mask-image:url("assets/img/type-video.svg"); mask-image:url("assets/img/type-video.svg"); }
+
   /* Scroll-Strecke: Kamera-Fahrt (~2.6) + Galerie (~13.0, inkl. Lauf-Sequenz) */
   .scroll-space{ position:relative; z-index:0; height:4060vh; }
 
@@ -277,7 +296,7 @@
 
     <!-- Kette (bleibt ~gleich groß, blendet beim Durchflug aus) -->
     <div class="chainWrap">
-      <img class="chain" src="assets/img/chain-fly.webp" alt="Fahrradkette" />
+      <img class="chain" src="assets/img/chain-fly-4k.webp" alt="Fahrradkette" />
     </div>
 
     <!-- Kamera (PXL) – eigenes Element, Anflug + Linsen-Zoom -->
@@ -345,6 +364,20 @@
     <!-- Schreib-Animation (1. Kreis links) -->
     <div class="typer" id="typer"></div>
 
+    <!-- Vorhang-Intro: Creme + Regentropfen-Dissolve (WebGL) + Grünkohl/Titel; wird nach dem Auflösen entfernt -->
+    <div id="curtain" aria-hidden="true">
+      <canvas id="curtainGl"></canvas>
+      <div class="hero" id="cHero">
+        <div class="hero__wrap">
+          <img class="hero__kale" src="assets/img/kale.png" alt="" />
+          <div class="hero__title">
+            <span class="type sinc"></span><img class="re" src="assets/img/re.png" alt="" /><span class="type moir"></span>
+          </div>
+          <div class="hero__subtitle"><span class="type video"></span></div>
+        </div>
+      </div>
+    </div>
+
     <!-- alter Cursor -->
     <div id="cursor"><img src="assets/img/cursor-jump.png" alt=""></div>
 
@@ -365,12 +398,11 @@
     <img class="corner corner--statue"   src="assets/img/statue.webp"   alt="Statue" />
     <img class="corner corner--building" src="assets/img/building.webp" alt="Gebäude" />
 
-    <!-- Ton-an/aus-Animation: gebogener Equalizer (dekorativ, spiegelt nur den Zustand) -->
-    <div class="eq" id="eq" aria-hidden="true">
+    <!-- Ton-an/aus: Equalizer oben mittig – Klick schaltet ALLE Sounds (Web-Audio + Videos) -->
+    <div class="eq" id="eq" role="button" aria-label="Ton an/aus" aria-pressed="false">
       <span class="bar"></span><span class="bar"></span><span class="bar"></span>
       <span class="bar"></span><span class="bar"></span><span class="bar"></span>
     </div>
-    <div class="eq__label" id="eqLabel">mute</div>
   </div>
 
   <!-- Glas-Objekt (3D), links mittig am Rand, taumelt mit dem Scroll -->
@@ -387,6 +419,99 @@
   <div class="hoverLbl" id="hoverLbl"></div>
   <div class="hint" id="hint">scroll · ton an bei klick</div>
   <div class="scroll-space"></div>
+
+<script>
+  /* ============ Vorhang-Intro (ehem. curtain.html) ============
+     Scrollen bewegt zuerst NUR den Vorhang (Seite bleibt oben): Grünkohl + Titel fliegen nach links oben raus,
+     die Creme löst sich Tropfen für Tropfen von rechts nach links auf -> darunter liegt diese Startseite.
+     Ist die Creme weg, wird der Vorhang entfernt und die Startseite übernimmt (Schreib-Animation startet).
+     Übersprungen bei ?at= / ?g= (Sprungmarken) und ?intro=0. */
+  (function curtainIntro(){
+    const el = document.getElementById('curtain');
+    const q = new URLSearchParams(location.search);
+    if(q.has('at') || q.has('g') || q.get('intro')==='0'){ el.remove(); window.__curtainOn = false; return; }
+    window.__curtainOn = true;
+    const cl = (v,a,b)=>Math.max(a,Math.min(b,v)), smooth = (t)=>t*t*(3-2*t);
+    const hero = document.getElementById('cHero'), cv = document.getElementById('curtainGl');
+    // Scroll-Weg = alter curtain.html-Weg (160vh) bis die Creme ganz weg ist (70 % davon)
+    const DIST = ()=>1.12*innerHeight;
+    let acc = 0, p = 0, done = false, ty = null;
+    const push = (d)=>{ acc = cl(acc+d, 0, DIST()); };
+    addEventListener('wheel', e=>{ if(done) return; e.preventDefault();
+      push(e.deltaY*(e.deltaMode===1 ? 16 : e.deltaMode===2 ? innerHeight : 1)*0.9); }, {passive:false});
+    addEventListener('touchstart', e=>{ ty = e.touches[0].clientY; }, {passive:true});
+    addEventListener('touchmove', e=>{ if(done || ty==null) return; e.preventDefault();
+      const y = e.touches[0].clientY; push((ty-y)*1.4); ty = y; }, {passive:false});
+    addEventListener('keydown', e=>{ if(done) return; const k = e.key, s = innerHeight*0.4;
+      if(k==='ArrowDown'){ e.preventDefault(); push(s*0.4); } else if(k==='PageDown' || k===' '){ e.preventDefault(); push(s); }
+      else if(k==='ArrowUp'){ e.preventDefault(); push(-s*0.4); } else if(k==='PageUp'){ e.preventDefault(); push(-s); }
+      else if(k==='End'){ e.preventDefault(); push(1e9); } else if(k==='Home'){ e.preventDefault(); push(-1e9); } });
+    addEventListener('scroll', ()=>{ if(!done && scrollY!==0) scrollTo(0,0); });   // z. B. Scrollbalken ziehen
+
+    // ---- WebGL: Creme (Film-Look) mit Regentropfen-Front; wo aufgelöst -> durchsichtig (Startseite sichtbar) ----
+    const gl = cv.getContext('webgl', { antialias:false, premultipliedAlpha:false, alpha:true });
+    let draw = (u)=>{ cv.style.opacity = String(1 - cl(u*1.6,0,1)); };        // Fallback ohne WebGL: Creme blendet aus
+    if(gl){
+      const sh = (type, src)=>{ const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+      const prog = gl.createProgram();
+      gl.attachShader(prog, sh(gl.VERTEX_SHADER, `attribute vec2 aPos; varying vec2 vUv;
+        void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos,0.0,1.0); }`));
+      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `precision highp float; varying vec2 vUv;
+        uniform vec2 uRes; uniform float uProg; uniform float uTime;
+        float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+        float noise(vec2 p){ vec2 i=floor(p), f=fract(p);
+          float a=hash(i), b=hash(i+vec2(1.,0.)), c=hash(i+vec2(0.,1.)), d=hash(i+vec2(1.,1.));
+          vec2 u=f*f*(3.-2.*f); return mix(mix(a,b,u.x),mix(c,d,u.x),u.y); }
+        void main(){
+          vec2 uv = vUv;
+          float grain = noise(uv*uRes/2.4);
+          float vig = 1.0 - smoothstep(0.36, 1.12, length((uv-vec2(0.5,0.42))*vec2(1.1,1.0)));
+          vec3 cream = vec3(0.957,0.957,0.882);                    // #F4F4E1
+          cream *= mix(0.90, 1.0, vig);
+          cream = mix(cream, cream*0.93, grain*0.35);
+          cream += smoothstep(0.75,0.0, length(uv-vec2(0.34,0.72)))*0.045;
+          float colN = floor(uv.x*80.0), ph = hash(vec2(colN, 3.0));
+          float run  = fract(uv.y*2.6 - uTime*(0.9+ph*0.7) - ph*6.0);
+          float drop = smoothstep(0.0,0.12,run)*smoothstep(0.85,0.30,run);
+          float jag  = (noise(vec2(colN*1.3, uv.y*24.0 - uTime*1.6))-0.5)*0.06 + drop*0.05;
+          float front = 1.22 - uProg*2.05 + jag;                    // Front: rechts -> links
+          float a = 1.0 - smoothstep(front-0.02, front+0.02, uv.x);
+          a = max(a, 1.0 - smoothstep(0.0, 0.02, uProg));
+          gl_FragColor = vec4(cream, a);
+        }`));
+      gl.linkProgram(prog); gl.useProgram(prog);
+      const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+      const aPos = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+      const U = { res:gl.getUniformLocation(prog,'uRes'), prog:gl.getUniformLocation(prog,'uProg'), time:gl.getUniformLocation(prog,'uTime') };
+      const resize = ()=>{ const dpr = Math.min(devicePixelRatio||1, 2);
+        cv.width = Math.round(innerWidth*dpr); cv.height = Math.round(innerHeight*dpr); gl.viewport(0,0,cv.width,cv.height); };
+      addEventListener('resize', resize); resize();
+      const t0 = performance.now(); let first = true;
+      draw = (u, now)=>{
+        gl.uniform2f(U.res, cv.width, cv.height); gl.uniform1f(U.prog, u); gl.uniform1f(U.time, (now-t0)/1000);
+        gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        if(first){ first = false; cv.style.background = 'transparent'; }  // CSS-Creme nur bis zum 1. Bild
+      };
+    }
+
+    function finish(){
+      done = true; window.__curtainOn = false; el.remove();
+      try{ gl && gl.getExtension('WEBGL_lose_context') && gl.getExtension('WEBGL_lose_context').loseContext(); }catch(_){}
+      if(typeof begin === 'function') begin();                         // Schreib-Animation (+ Ton) der Startseite
+    }
+    function frame(now){
+      if(done) return;
+      const target = acc/DIST();
+      p += (target-p)*0.075; if(Math.abs(target-p) < 1e-4) p = target;
+      const h = smooth(cl(p/0.714, 0, 1));                               // Grünkohl + Titel raus (alter Bereich 0..0.5)
+      hero.style.transform = `translate(${(-125*h).toFixed(3)}%, ${(-55*h).toFixed(3)}%) rotate(${(-42*h).toFixed(3)}deg)`;
+      draw(cl((0.7*p-0.12)/0.88, 0, 1), now);                            // Dissolve wie zuvor (bei p=1 ist die Creme weg)
+      if(target >= 1 && p >= 0.995) finish(); else requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>
 
 <script>
   /* ============ Cursor-getriebene Effekte ============ */
@@ -425,6 +550,7 @@
       master = audioCtx.createGain();
       master.gain.value = muted ? 0 : 0.9;
       master.connect(audioCtx.destination);
+      if(muted) audioCtx.suspend();                      // Ton aus (z. B. Wahl auf der Ladeseite): Kontext gar nicht erst laufen lassen
     }catch(_){}
   }
 
@@ -526,23 +652,23 @@
     });
   }
 
-  /* ---- Equalizer = reine Ton-an/aus-Animation (spiegelt nur den Zustand, kein Schalter mehr) ---- */
+  /* ---- Ton an/aus: NUR über den Equalizer oben (kein Hover-Label mehr am Cursor) ----
+     Aus = master-Gain 0 UND AudioContext angehalten (nichts läuft weiter/startet neu) UND alle <video> stumm. */
   const eq = document.getElementById('eq');
-  const eqLabel = document.getElementById('eqLabel');
   function setMute(m){
     muted = m;
     if(master) master.gain.value = muted ? 0 : 0.9;
-    if(video) video.muted = muted;
+    if(audioCtx){ try{ muted ? audioCtx.suspend() : audioCtx.resume(); }catch(_){} }
+    document.querySelectorAll('video').forEach(v=>{ v.muted = muted; });
     eq.classList.toggle('muted', muted);
-    eqLabel.textContent = muted ? 'unmute' : 'mute';
+    eq.setAttribute('aria-pressed', String(muted));
   }
-
-  // mute/unmute NUR am Video-Player (Hover zeigt Label, Klick schaltet)
-  const videoPlayerEl = document.getElementById('videoPlayer');
-  videoPlayerEl.addEventListener('click', ()=>{ ensureAudio(); if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); setMute(!muted); });
-  videoPlayerEl.addEventListener('pointerenter', ()=>{ eqLabel.textContent = muted?'unmute':'mute'; eqLabel.style.opacity='1'; });
-  videoPlayerEl.addEventListener('pointermove', (e)=>{ eqLabel.style.left=(e.clientX+16)+'px'; eqLabel.style.top=(e.clientY-8)+'px'; });
-  videoPlayerEl.addEventListener('pointerleave', ()=>{ eqLabel.style.opacity='0'; });
+  window.__isMuted = ()=>muted;
+  // Ton-Wahl von der Ladeseite (loader.html -> hier, Vorhang-Intro ist Teil dieser Seite), sessionStorage 'nihanzo-sound' = 'on' | 'off'
+  let soundPref=null; try{ soundPref=sessionStorage.getItem('nihanzo-sound'); }catch(_){}
+  if(soundPref==='off'){ setMute(true); hint.textContent='scroll'; }
+  else if(soundPref==='on'){ ensureAudio(); try{ audioCtx && audioCtx.resume().catch(()=>{}); }catch(_){} }   // same-origin nach Klick: läuft meist sofort
+  eq.addEventListener('click', ()=>{ ensureAudio(); setMute(!muted); if(!muted) twPlayNow(); });
 
   /* ---- Sounds automatisch aus beim Verlassen der Seite / Tab wechseln ---- */
   function suspendAll(){ try{ audioCtx && audioCtx.suspend(); }catch(_){} try{ video && video.pause(); }catch(_){} }
@@ -567,15 +693,18 @@
 
   function begin(){
     ensureAudio();
-    if(!started){ started = true; hint.style.opacity = '0'; type(); }
-    if(audioCtx){ (audioCtx.state==='suspended' ? audioCtx.resume() : Promise.resolve()).then(twPlayNow).catch(()=>{}); }
+    if(!started && !window.__curtainOn){ started = true; hint.style.opacity = '0'; type(); }   // erst nach dem Vorhang
+    if(audioCtx && !muted){ (audioCtx.state==='suspended' ? audioCtx.resume() : Promise.resolve()).then(twPlayNow).catch(()=>{}); }
   }
   // Autoplay-Regeln: Ton erst nach erster Nutzer-Interaktion
   window.addEventListener('pointerdown', begin, {once:true});
   window.addEventListener('keydown',    begin, {once:true});
   window.addEventListener('wheel',      begin, {once:true, passive:true});
   // Ohne Ton trotzdem tippen, falls 1.2s keine Interaktion kommt
-  setTimeout(()=>{ if(!started){ started = true; hint.style.opacity='0'; type(); } }, 1400);
+  // (Ton-Wahl „on“ und AudioContext läuft schon -> mit Schreibmaschinen-Ton)
+  setTimeout(()=>{ if(window.__curtainOn) return;                     // Vorhang ruft begin() selbst auf
+    if(!started){ if(!muted && audioCtx && audioCtx.state==='running'){ begin(); return; }
+    started = true; hint.style.opacity='0'; type(); } }, 1400);
 
   /* ============ Scroll-Director: Kamera-Fahrt -> Galerie (ein rAF-Loop) ============ */
   (function scrollDirector(){
@@ -596,11 +725,15 @@
     const CHX=0.715, CHY=0.647;
     chainWrap.style.transformOrigin = (CHX*100)+'% '+(CHY*100)+'%';
     // Maße der Startsequenz EINMAL messen (und bei resize) statt in jedem Frame (vermeidet erzwungene Layouts)
-    const SG={CX:0,CY:0,loopX:0,loopY:0,camW:0,camH:0};
+    const CH_K=2.5;                         // Layout-Überhöhung der Kette (siehe .chainWrap)
+    const SG={CX:0,CY:0,loopX:0,loopY:0,camW:0,camH:0,chTx:0,chTy:0};
     function measureStart(){
       SG.CX=innerWidth/2; SG.CY=innerHeight/2;
-      const cwW=chainWrap.offsetWidth, cwH=chainWrap.offsetHeight;
+      const LW=chainWrap.offsetWidth, LH=chainWrap.offsetHeight;          // Layoutgröße (2.5×)
+      const cwW=LW/CH_K, cwH=LH/CH_K;                                     // sichtbare Größe bei Zoom 1
       SG.loopX=SG.CX+(CHX-0.5)*cwW; SG.loopY=SG.CY+(CHY-0.5)*cwH;       // größtes Kettenglied (Kamera sitzt darin)
+      // Box-Ecke liegt bei (CX,CY) (left/top 50%); Verschiebung so, dass das Kettenloch (= transform-origin) auf loopX/Y liegt
+      SG.chTx=SG.loopX-SG.CX-CHX*LW; SG.chTy=SG.loopY-SG.CY-CHY*LH;
       SG.camW=cam.offsetWidth; SG.camH=SG.camW*917/1111;                  // unabhängig davon, ob das Bild schon geladen ist
     }
     measureStart(); addEventListener('load', measureStart, {once:true});
@@ -640,7 +773,7 @@
       for(const b of boxes){ b.style.width=Wc+'px'; b.style.height=Hc+'px'; }
       // RUN_START = g, bei dem box4 (letzter Kasten) mit der rechten Kante die linke Motivkante (Hörnerbreite) passiert
       const ttRun=(innerWidth/2 + 4.5*Wc)/(innerWidth + 4*Wc);
-      // Zug startet erst, wenn picIn=1 (rechte Videokante 80px links der Hörner): smoothstep invertieren
+      // Zug startet erst, wenn die rechte Videokante 80px links der Hörner ist (Skulptur ganz frei): smoothstep invertieren
       const vW=videoPlayer.offsetWidth||1000, need=Math.min((vW/2+Wc/2+80)/(vW+20),1);
       TRAIN_START=(0.5-Math.sin(Math.asin(1-2*need)/3))*VID_EXIT; TRAIN_END=TRAIN_START+TRAIN_SPAN;
       RUN_START=TRAIN_START + ttRun*(TRAIN_END-TRAIN_START); STAND_END=RUN_START+0.12*K;
@@ -680,7 +813,7 @@
       typer.style.opacity = String(1 - cl(p/0.09,0,1));
       const cut = p>=CUT;                                   // Auslöser = harter Schnitt aufs Video
       // Kette: 2D-Zoom um das Kettenloch = exakt die frühere Perspektiv-Projektion (translateZ), ohne 3D-Kontext
-      chainWrap.style.transform = `translate(-50%,-50%) scale(${Z.toFixed(4)})`;
+      chainWrap.style.transform = `translate(${SG.chTx.toFixed(1)}px,${SG.chTy.toFixed(1)}px) scale(${(Z/CH_K).toFixed(5)})`;
       chainWrap.style.visibility = cut ? 'hidden' : '';
       // Kamera: driftet Loch -> Mitte, Fokus wandert Mitte -> Linse, Größe = SC0·Z
       const s = SC0 * Z;
@@ -804,7 +937,9 @@
       }
 
       // --- Motiv erscheint ERST wenn die linke Videokante den Bildschirmrand erreicht; verschwindet zu Beginn der Lauf-Anim schnell ---
-      const picIn = cl(((CX-Wc/2)-(videoLeftEdge+(videoPlayer.offsetWidth||1000)))/80,0,1); // rechte Videokante verlässt die Hörner (linke Motivkante) -> Motiv fadet ein
+      // Skulptur steht voll HINTER dem (deckenden) Video, sobald es losgleitet -> das rausgleitende Video legt sie
+      // von rechts nach links nach und nach frei (vorher erst eingeblendet, wenn das Video ganz vorbei war)
+      const picIn = g>0 ? 1 : 0;
       const runnerMix = cl((g-RUN_START)/0.015,0,1);   // statisches Motiv -> Daumenkino (sitzend, deckungsgleich)
       centerpic.style.opacity = String((pc>=CUT?1:0) * picIn * (1-runnerMix));
 
@@ -1022,7 +1157,7 @@
         vp.offsetWidth;                                   // reflow -> Transition greift
         vp.style.transition=''; place(T,T);
         vpc.classList.add('on'); setLbl('close','close');
-        const v=vp.querySelector('video'); if(v.currentSrc){ v.play().catch(()=>{}); }
+        const v=vp.querySelector('video'); v.muted=!!(window.__isMuted&&window.__isMuted()); if(v.currentSrc){ v.play().catch(()=>{}); }
         setTimeout(()=>busy=false,600);
       });
     });
