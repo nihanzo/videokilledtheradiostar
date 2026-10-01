@@ -1,330 +1,335 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>nihanzo — Video Editor & Colorist</title>
-  <meta name="description" content="Portfolio of nihanzo — video editing, color grading, and motion graphics for brands, artists, and filmmakers." />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>nihanzo</title>
+<!--
+  LADESEITE – weißer Hintergrund
+   1. Gans aus Kreuzen (assets/img/goose-crosses.webp) gleitet von unten rechts diagonal nach oben links raus
+      (leicht in Flugrichtung gedreht, GOOSE_ROT). Hinter ihr: Kirchkreuze als Schleier -> Fluglinie bis in die Ecke.
+   2. Die Skulptur (assets/img/madonna.webp) erscheint SCHRÄG DIREKT HINTER der Gans Stück für Stück
+      (diagonale Maske, deren Kante dem Schwanz der Gans folgt). Die Kreuzlinie ist im Bereich des Bildes unterbrochen.
+   3. Danach schießt eine Linie aus dem Auge der Mutter schräg nach oben rechts und schreibt schnell
+      „believe the story" (#B5C188); dann zieht sich die Linie zurück.
+   4. Silberne Powerbank (reines CSS nach Produktfoto, hochkant) rechts unter dem Text lädt 0 -> 100 %;
+      bei 100 % erscheinen direkt an der Unterkante der Figur die Sound-Buttons (gleiche Breite wie die Bronze-Kante).
+   5. Schwarzes USB-C-Kabel (SVG): hängt von der Powerbank rechts an der Figur vorbei herunter und steckt mit dem
+      USB-C-Stecker seitlich im rechten Button („enter without sound").
+-->
+<style>
+  @font-face{ font-family:'Animo'; src:url('assets/fonts/animo/Animo.otf') format('opentype'); font-display:swap; }
+  :root{ --olive:#798816; --say:#B5C188; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{ background:#fff; overflow:hidden; font-family:'Animo',Georgia,serif; }
 
-  <!-- Open Graph / social preview (swap the url + image when you have them) -->
-  <meta property="og:title" content="nihanzo — Video Editor & Colorist" />
-  <meta property="og:description" content="Editing, color, and motion for brands, artists, and filmmakers." />
-  <meta property="og:type" content="website" />
+  #trail{ position:fixed; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; }
 
-  <!-- Inline SVG favicon: a little play button -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230a0a0c'/%3E%3Cpath d='M40 32 L70 50 L40 68 Z' fill='%23ff6b3d'/%3E%3C/svg%3E" />
+  /* Skulptur: Sichtbarkeit nur über die diagonale Maske (per JS), Unterkante scharf */
+  .mad{ position:fixed; left:0; top:0; z-index:3; pointer-events:none;
+    -webkit-mask-image:linear-gradient(transparent,transparent); mask-image:linear-gradient(transparent,transparent); }
+  .mad img{ display:block; width:100%; height:100%; }
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  /* Linie aus dem Auge + geschriebener Satz */
+  #beam{ position:fixed; inset:0; width:100%; height:100%; z-index:5; pointer-events:none; overflow:visible; }
+  .say{ position:fixed; left:0; top:0; z-index:5; white-space:nowrap; color:var(--say); letter-spacing:.02em;
+    line-height:1; pointer-events:none; clip-path:inset(-20% 100% -20% 0); }
 
-  <link rel="stylesheet" href="css/styles.css" />
+  /* USB-C-Kabel (z4): Powerbank (z7) und Buttons (z7) decken die Metallspitzen ab -> Stecker wirken eingesteckt */
+  .cable{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+  #cableFront{ z-index:4; }
+  .cable .c0{ fill:none; stroke:#0f0f11; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
+  .cable .c1{ fill:none; stroke:#56565c; stroke-width:.9; stroke-linecap:round; stroke-linejoin:round; transform:translate(-.7px,-.9px); }
+  .plug{ opacity:0; }                                      /* Deckkraft setzt das JS synchron zum Zeichnen des Kabels */
+
+  /* Gans */
+  #goose{ position:fixed; left:0; top:0; z-index:6; pointer-events:none; will-change:transform; display:block; }
+
+  /* Sound-Buttons: direkt an der Unterkante der Figur, so breit wie die Bronze-Kante; Farbe/Hover wie die Kreuze */
+  .enter{ position:fixed; z-index:7; display:flex; opacity:0; visibility:hidden; transform:translateY(6px);
+    transition:opacity .5s ease, transform .5s ease, visibility 0s linear .5s; }
+  .enter.show{ opacity:1; visibility:visible; transform:none; transition:opacity .5s ease, transform .5s ease; }
+  .enter button{ flex:1 1 50%; min-width:0; font-family:'Animo',Georgia,serif; font-size:inherit; letter-spacing:.03em;
+    text-transform:lowercase; white-space:nowrap; color:var(--olive); background:#fff; border:2.3px solid var(--olive);
+    padding:8px 8px; cursor:pointer; transition:background .25s ease, color .25s ease;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; line-height:1.1; }
+  .enter button + button{ border-left:0; }                       /* kein Platz dazwischen, keine doppelte Linie */
+  .enter button small{ font-size:.82em; opacity:.85; }
+  .enter button:hover, .enter button:focus-visible{ background:var(--olive); color:#fff; outline:none; }
+
+  /* Powerbank (SILBER, hochkant) – nach Produktfoto: Riffelung in dunklerem Silber, glattes Band unten mit
+     rundem schwarzem Display, Ports an der Unterkante; Dicke = gestufte Kante nach unten rechts */
+  .pb{ position:fixed; left:0; top:0; z-index:7; width:84px; height:137px; border-radius:17px;
+    transform:scale(var(--pbs,1.25)); transform-origin:0 0;   /* größer (Grundmaße 84×137 bleiben, JS rechnet mit PBS) */
+    background:
+      linear-gradient(142deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 36%,rgba(255,255,255,0) 70%,rgba(255,255,255,.25) 100%),
+      repeating-linear-gradient(118deg,#d9dcdf 0 1.3px,#b3b8bd 1.3px 3px);
+    box-shadow:
+      inset 0 0 0 1px rgba(90,96,102,.28), inset 1px 1px 0 rgba(255,255,255,.8),
+      1px 1px 0 #b1b5ba, 2px 2px 0 #9fa4a9, 3px 3px 0 #8d9297,
+      12px 14px 18px rgba(40,46,52,.16); }
+  .pb__band{ position:absolute; left:0; right:0; bottom:0; height:36%; border-radius:0 0 17px 17px;
+    background:linear-gradient(180deg,#e4e6e9,#cfd3d7 55%,#dadde0);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 2px 0 rgba(120,126,132,.18), inset 0 -1px 0 rgba(255,255,255,.6); }
+  .pb__disp{ position:absolute; left:50%; top:50%; width:36px; height:36px; margin:-18px 0 0 -18px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#2a2a2e 0%,#060607 55%);
+    box-shadow:0 0 0 1.5px #8f949a, 0 0 0 2.5px #e9ebed, inset 0 1px 1px rgba(255,255,255,.12);
+    display:flex; align-items:center; justify-content:center;
+    font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:#f4f4f4; letter-spacing:-.4px;
+    font-variant-numeric:tabular-nums; text-shadow:0 0 3px rgba(255,255,255,.45); }
+  .pb__disp::before{ content:''; position:absolute; left:4.5px; top:50%; width:3px; height:3px; margin-top:-1.5px;
+    border-radius:50%; background:#3ddc6a; box-shadow:0 0 4px #3ddc6a; }
+  .pb__disp small{ position:absolute; right:4.5px; top:9px; font-size:5.5px; opacity:.85; }
+  .pb.charging .pb__disp::before{ animation:blink 1s steps(2) infinite; }
+  @keyframes blink{ 50%{ opacity:.15; } }
+  .pb__ports{ position:absolute; left:0; right:0; top:100%; height:3px; transform:skewX(45deg); transform-origin:0 0; }
+  .pb__ports i{ position:absolute; top:.6px; height:1.8px; border-radius:1px; background:#2a2c2f;
+    box-shadow:inset 0 0 0 .6px #6d7176; }
+  .pb__ports i:nth-child(1){ left:18%; width:10px; }
+  .pb__ports i:nth-child(2){ left:40%; width:13px; background:#e8891f; box-shadow:inset 0 0 0 .6px #7a3f05; }
+  .pb__ports i:nth-child(3){ left:66%; width:10px; }
+</style>
 </head>
 <body>
-  <!-- Film-grain overlay across the whole page -->
-  <div class="grain" aria-hidden="true"></div>
+  <canvas id="trail"></canvas>
 
-  <!-- ============ NAV ============ -->
-  <header class="nav" id="nav">
-    <div class="container nav__inner">
-      <a href="#top" class="brand" aria-label="nihanzo home">
-        <span class="brand__mark" aria-hidden="true"></span>
-        nihanzo
-      </a>
-
-      <nav class="nav__links" id="navLinks" aria-label="Primary">
-        <a href="#work">Work</a>
-        <a href="#about">About</a>
-        <a href="#services">Services</a>
-        <a href="#contact" class="nav__cta">Let's talk</a>
-      </nav>
-
-      <button class="nav__toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </header>
-
-  <main id="top">
-    <!-- ============ HERO / SHOWREEL ============ -->
-    <section class="hero" id="hero">
-      <div class="hero__bg" aria-hidden="true">
-        <span class="glow glow--warm"></span>
-        <span class="glow glow--cool"></span>
-      </div>
-
-      <div class="container hero__inner">
-        <p class="eyebrow reveal">Video Editor &amp; Colorist</p>
-        <h1 class="hero__title reveal">
-          Stories, cut<br />to <span class="grad">keep people watching.</span>
-        </h1>
-        <p class="hero__sub reveal">
-          Editing, color, and motion for brands, artists, and filmmakers.
-          I turn raw footage into work that holds attention from the first frame.
-        </p>
-
-        <div class="hero__actions reveal">
-          <button class="btn btn--primary" data-open-reel>
-            <span class="btn__play" aria-hidden="true"></span>
-            Watch Showreel
-          </button>
-          <a href="#work" class="btn btn--ghost">View Work</a>
-        </div>
-
-        <!-- Stats — swap the numbers for your real ones -->
-        <ul class="hero__stats reveal">
-          <li><span class="stat" data-count="6" data-suffix="+">0</span><em>Years editing</em></li>
-          <li><span class="stat" data-count="250" data-suffix="+">0</span><em>Projects delivered</em></li>
-          <li><span class="stat" data-count="40" data-suffix="+">0</span><em>Happy clients</em></li>
-          <li><span class="stat" data-count="15" data-suffix="M+">0</span><em>Views generated</em></li>
-        </ul>
-      </div>
-
-      <a href="#work" class="hero__scroll" aria-label="Scroll to work">
-        <span></span>
-      </a>
-    </section>
-
-    <!-- ============ TOOLS MARQUEE ============ -->
-    <div class="marquee" aria-hidden="true">
-      <div class="marquee__track">
-        <span>Premiere Pro</span><span>•</span><span>DaVinci Resolve</span><span>•</span>
-        <span>After Effects</span><span>•</span><span>Cinema 4D</span><span>•</span>
-        <span>Audition</span><span>•</span><span>Photoshop</span><span>•</span>
-        <span>Premiere Pro</span><span>•</span><span>DaVinci Resolve</span><span>•</span>
-        <span>After Effects</span><span>•</span><span>Cinema 4D</span><span>•</span>
-        <span>Audition</span><span>•</span><span>Photoshop</span><span>•</span>
-      </div>
-    </div>
-
-    <!-- ============ PORTFOLIO ============ -->
-    <section class="section work" id="work">
-      <div class="container">
-        <div class="section__head reveal">
-          <p class="eyebrow">Selected Work</p>
-          <h2 class="section__title">Recent projects</h2>
-          <p class="section__lead">
-            A mix of music videos, commercials, short films, and social content.
-            Click any project to play. <em>(These are placeholders — swap in your own reels.)</em>
-          </p>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters reveal" role="tablist" aria-label="Filter work">
-          <button class="filter is-active" data-filter="all">All</button>
-          <button class="filter" data-filter="music">Music Videos</button>
-          <button class="filter" data-filter="commercial">Commercial</button>
-          <button class="filter" data-filter="film">Short Film</button>
-          <button class="filter" data-filter="social">Social</button>
-        </div>
-
-        <!-- Grid. Each card is swap-ready: set data-video to a YouTube/Vimeo embed URL. -->
-        <div class="grid" id="workGrid">
-          <!-- Card 1 -->
-          <article class="card reveal" data-category="music" data-video="" data-title="Neon Nights — Official Video" style="--g1:#1b2735;--g2:#ff6b3d">
-            <button class="card__play" aria-label="Play Neon Nights"><span></span></button>
-            <div class="card__meta">
-              <span class="tag">Music Video</span>
-              <span class="dur">3:42</span>
-            </div>
-            <h3 class="card__title">Neon Nights — Official Video</h3>
-          </article>
-          <!-- Card 2 -->
-          <article class="card reveal" data-category="commercial" data-video="" data-title="Aro — Brand Film" style="--g1:#241b35;--g2:#2dd4bf">
-            <button class="card__play" aria-label="Play Aro Brand Film"><span></span></button>
-            <div class="card__meta">
-              <span class="tag">Commercial</span>
-              <span class="dur">1:15</span>
-            </div>
-            <h3 class="card__title">Aro — Brand Film</h3>
-          </article>
-          <!-- Card 3 -->
-          <article class="card reveal" data-category="film" data-video="" data-title="The Long Way Home — Short" style="--g1:#2a1f1a;--g2:#ffb347">
-            <button class="card__play" aria-label="Play The Long Way Home"><span></span></button>
-            <div class="card__meta">
-              <span class="tag">Short Film</span>
-              <span class="dur">8:04</span>
-            </div>
-            <h3 class="card__title">The Long Way Home — Short</h3>
-          </article>
-          <!-- Card 4 -->
-          <article class="card reveal" data-category="social" data-video="" data-title="Summer Drop — Campaign" style="--g1:#1a2a2a;--g2:#ff3d6e">
-            <button class="card__play" aria-label="Play Summer Drop"><span></span></button>
-            <div class="card__meta">
-              <span class="tag">Social</span>
-              <span class="dur">0:30</span>
-            </div>
-            <h3 class="card__title">Summer Drop — Campaign</h3>
-          </article>
-          <!-- Card 5 -->
-          <article class="card reveal" data-category="music" data-video="" data-title="Echoes — Lyric Video" style="--g1:#1b1b2f;--g2:#7c5cff">
-            <button class="card__play" aria-label="Play Echoes"><span></span></button>
-            <div class="card__meta">
-              <span class="tag">Music Video</span>
-              <span class="dur">4:10</span>
-            </div>
-            <h3 class="card__title">Echoes — Lyric Video</h3>
-          </article>
-          <!-- Card 6 -->
-          <article class="card reveal" data-category="commercial" data-video="" data-title="Field Notes — Product Spot" style="--g1:#20261a;--g2:#a3e635">
-            <button class="card__play" aria-label="Play Field Notes"><span></span></button>
-            <div class="card__meta">
-              <span class="tag">Commercial</span>
-              <span class="dur">0:45</span>
-            </div>
-            <h3 class="card__title">Field Notes — Product Spot</h3>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ ABOUT ============ -->
-    <section class="section about" id="about">
-      <div class="container about__grid">
-        <div class="about__portrait reveal" aria-hidden="true">
-          <!-- Swap this block for your photo: <img src="assets/portrait.jpg" alt="nihanzo"> -->
-          <div class="portrait-ph"><span>Your photo</span></div>
-        </div>
-
-        <div class="about__body">
-          <p class="eyebrow reveal">About</p>
-          <h2 class="section__title reveal">Hi, I'm nihanzo — I make cuts that feel intentional.</h2>
-          <p class="reveal">
-            I'm a video editor and colorist with a love for rhythm, pacing, and story.
-            Over the past several years I've cut everything from fast-paced social ads to
-            long-form documentary, always chasing the version that makes people <em>feel</em> something.
-          </p>
-          <p class="reveal">
-            <strong>This is placeholder copy</strong> — replace it with your real story: how you got
-            started, the kind of work you love, and what clients can expect working with you.
-          </p>
-
-          <div class="about__cols reveal">
-            <div>
-              <h3 class="mini-title">What I do</h3>
-              <ul class="ticked">
-                <li>Narrative &amp; commercial editing</li>
-                <li>Color grading</li>
-                <li>Motion graphics &amp; titles</li>
-                <li>Sound design &amp; mixing</li>
-              </ul>
-            </div>
-            <div>
-              <h3 class="mini-title">Tools</h3>
-              <ul class="ticked">
-                <li>Premiere Pro</li>
-                <li>DaVinci Resolve</li>
-                <li>After Effects</li>
-                <li>Cinema 4D &amp; Audition</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ SERVICES ============ -->
-    <section class="section services" id="services">
-      <div class="container">
-        <div class="section__head reveal">
-          <p class="eyebrow">Services</p>
-          <h2 class="section__title">How I can help</h2>
-          <p class="section__lead">Full-service post-production, or just the piece you need.</p>
-        </div>
-
-        <div class="svc-grid">
-          <article class="svc reveal">
-            <span class="svc__num">01</span>
-            <h3>Video Editing</h3>
-            <p>Story-first editing for films, ads, and content — pacing, structure, and rhythm that keep viewers locked in.</p>
-          </article>
-          <article class="svc reveal">
-            <span class="svc__num">02</span>
-            <h3>Color Grading</h3>
-            <p>Cinematic looks, clean matching, and mood-setting grades in DaVinci Resolve that make footage sing.</p>
-          </article>
-          <article class="svc reveal">
-            <span class="svc__num">03</span>
-            <h3>Motion &amp; VFX</h3>
-            <p>Titles, lower-thirds, kinetic type, and clean composites to elevate the finished piece.</p>
-          </article>
-          <article class="svc reveal">
-            <span class="svc__num">04</span>
-            <h3>Short-Form / Social</h3>
-            <p>Scroll-stopping vertical edits for Reels, TikTok, and Shorts — built to hook in the first second.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ CONTACT ============ -->
-    <section class="section contact" id="contact">
-      <div class="container contact__inner reveal">
-        <p class="eyebrow">Contact</p>
-        <h2 class="section__title">Have a project in mind?</h2>
-        <p class="section__lead">
-          Tell me about it — timelines, footage, and what you're going for.
-          I'll get back to you within a couple of days.
-        </p>
-
-        <!-- This form opens the visitor's email app (no backend needed).
-             To collect submissions on the site instead, connect a service like Formspree
-             and set the form's action to your endpoint. -->
-        <form class="contact__form" id="contactForm">
-          <div class="field">
-            <label for="cName">Name</label>
-            <input id="cName" name="name" type="text" placeholder="Your name" required />
-          </div>
-          <div class="field">
-            <label for="cEmail">Email</label>
-            <input id="cEmail" name="email" type="email" placeholder="you@email.com" required />
-          </div>
-          <div class="field field--full">
-            <label for="cMsg">Project details</label>
-            <textarea id="cMsg" name="message" rows="4" placeholder="What are you working on?" required></textarea>
-          </div>
-          <button type="submit" class="btn btn--primary">Send message</button>
-        </form>
-
-        <p class="contact__or">or email me directly at
-          <!-- Swap in your real email -->
-          <a href="mailto:hello@nihanzo.com">hello@nihanzo.com</a>
-        </p>
-      </div>
-    </section>
-  </main>
-
-  <!-- ============ FOOTER ============ -->
-  <footer class="footer">
-    <div class="container footer__inner">
-      <a href="#top" class="brand">
-        <span class="brand__mark" aria-hidden="true"></span>
-        nihanzo
-      </a>
-      <nav class="footer__social" aria-label="Social links">
-        <!-- Swap the # for your real profile links -->
-        <a href="#" aria-label="YouTube">YouTube</a>
-        <a href="#" aria-label="Instagram">Instagram</a>
-        <a href="#" aria-label="Vimeo">Vimeo</a>
-        <a href="#" aria-label="LinkedIn">LinkedIn</a>
-      </nav>
-      <p class="footer__copy">© <span id="year">2026</span> nihanzo. All rights reserved.</p>
-    </div>
-  </footer>
-
-  <!-- ============ VIDEO MODAL ============ -->
-  <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Video player">
-    <div class="modal__backdrop" data-close-modal></div>
-    <div class="modal__box">
-      <button class="modal__close" data-close-modal aria-label="Close">&times;</button>
-      <div class="modal__frame" id="modalFrame">
-        <!-- JS injects the video here. With no source set yet, a placeholder shows. -->
-      </div>
-      <p class="modal__title" id="modalTitle"></p>
-    </div>
+  <div class="mad" id="mad">
+    <img src="assets/img/madonna.webp" alt="Bronzeskulptur: Mutter und Kind blicken nach oben" />
   </div>
 
-  <script src="js/main.js"></script>
+  <svg class="cable" id="cableFront" aria-hidden="true">
+    <g id="segA"><path class="c0"/><path class="c1"/></g>
+    <!-- Stecker oben: im linken USB-C-Port der Powerbank; unten: seitlich im rechten Button (Spitze zeigt nach links) -->
+    <g class="plug" id="plugTop"><rect id="plugTopBody" width="8" height="15" rx="2.2" fill="#141416"/></g>
+    <g class="plug" id="plugEnd"><clipPath id="plugClip"><rect id="plugClipR" x="17" y="-6" width="0" height="12"/></clipPath>
+      <g clip-path="url(#plugClip)"><rect x="-5" y="-3" width="6" height="6" rx="1.6" fill="#c9cdd2" stroke="#8d9297" stroke-width=".6"/>
+      <rect x="0" y="-4.25" width="16" height="8.5" rx="2.4" fill="#141416"/></g></g>
+  </svg>
+  <svg id="beam" aria-hidden="true"><line id="beamL" x1="0" y1="0" x2="0" y2="0"
+    stroke="#B5C188" stroke-width="1.4" stroke-linecap="round" visibility="hidden" /></svg>
+  <div class="say" id="say"><span id="w1">believe</span> the story</div>
+
+  <img id="goose" src="assets/img/goose-crosses.webp" alt="Gans aus Kreuzen mit Kind auf dem Rücken" />
+
+  <div class="enter" id="enter">
+    <button type="button" data-sound="on"><span>&#9654;&nbsp; enter with sound</span><small>(recommend)</small></button>
+    <button type="button" data-sound="off"><span>enter without sound</span></button>
+  </div>
+
+  <div class="pb charging" id="pb" role="progressbar" aria-label="lädt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="pb__band"><div class="pb__disp"><span id="pct">0</span><small>%</small></div></div>
+    <div class="pb__ports" aria-hidden="true"><i></i><i></i><i></i></div>
+  </div>
+
+<script>
+(function(){
+  const DURATION = 5200;                 // Laden 0 -> 100 % (bisherige Ladezeit)
+  const FLY_START = 250, FLY_DUR = 4700; // Gleitflug der Gans (ms)
+  const GOOSE_ROT = 12;                  // Grad im Uhrzeigersinn: Kopf etwas mehr zur Zielecke oben links
+  const GOOSE_AR = 815/1200, MAD_AR = 1207/1400;
+  const NOSE = [0.678,0.108], EYE = [0.481,0.089];   // im madonna.webp (relativ): Nasenspitze, Auge der Mutter
+  const EDGE = [0.0381,0.9006];          // Bronze-Unterkante (unterste 30 Zeilen, weiche Kante mitgezählt): 3.8 % – 90.1 %
+  const CAB = 1000;                      // Kabel + Stecker zeichnen sich in einem Zug von der Powerbank bis in den Button (ms)
+  const PLUG = 22;                       // Stecker unten (Körper 16 + Metallspitze 6 px): letztes Stück des Zugs, wächst nach links in den Button
+  const SOFT = 2;                        // Kante der Einblend-Maske (px) – scharf, kein weißer Dunst beim Erscheinen
+  const PBS = 1.25;                      // Powerbank-Vergrößerung (= CSS --pbs)
+  const BEAM_IN = 300, WRITE = 800, BEAM_OUT = 320;   // Linie raus · Satz schreiben · Linie zurückziehen (ms)
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const $ = (id)=>document.getElementById(id);
+  const cv=$('trail'), ctx=cv.getContext('2d'), goose=$('goose'), mad=$('mad'), say=$('say'), beamL=$('beamL');
+  const pct=$('pct'), pb=$('pb'), enter=$('enter');
+  const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+  // ---------- Geometrie ----------
+  let W=0,H=0,dpr=1,gw=0,gh=0,S={x:0,y:0},E={x:0,y:0},dir={x:0,y:0},perp={x:0,y:0},L=1;
+  let madR={x:0,y:0,w:0,h:0}, eye={x:0,y:0}, txt={x:0,y:0,w:0,h:0};
+  let maskAng=0, maskLen=1;              // CSS-Winkel & Länge des Masken-Verlaufs (entlang der Flugrichtung)
+  function layout(){
+    W=innerWidth; H=innerHeight; dpr=Math.min(devicePixelRatio||1,2);
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+    gw=cl(W*0.42,280,640); gh=gw*GOOSE_AR; goose.style.width=gw+'px';
+    S={x:W+gw*0.30, y:H+gh*0.30};                        // Start: knapp außerhalb unten rechts
+    E={x:-gw*0.55,  y:-gh*0.55};                         // Ziel: außerhalb oben links
+    L=Math.hypot(E.x-S.x,E.y-S.y); dir={x:(E.x-S.x)/L, y:(E.y-S.y)/L}; perp={x:-dir.y, y:dir.x};
+    // Skulptur mittig
+    const mh=Math.min(H*0.50,(W*0.56)/MAD_AR), mw=mh*MAD_AR;
+    madR={x:(W-mw)/2, y:H*0.41-mh/2, w:mw, h:mh};
+    Object.assign(mad.style,{width:mw+'px',height:mh+'px',left:madR.x+'px',top:madR.y+'px'});
+    // Masken-Verlauf zeigt in Flugrichtung (Start = die Seite, von der die Gans kommt)
+    const th=Math.atan2(dir.x,-dir.y); maskAng=th*180/Math.PI;
+    maskLen=Math.abs(mw*Math.sin(th))+Math.abs(mh*Math.cos(th));
+    eye={x:madR.x+EYE[0]*mw, y:madR.y+EYE[1]*mh};
+    // Satz in Blickrichtung (oben rechts vor dem Gesicht), einzeilig, im Viewport
+    const fs=cl(mh*0.068,20,34); say.style.fontSize=fs.toFixed(1)+'px';
+    const tw=say.offsetWidth, tH=say.offsetHeight;
+    let bx=madR.x+NOSE[0]*mw+fs*0.9, by=madR.y+NOSE[1]*mh-fs*3.1;
+    bx=Math.min(bx,W-tw-16); by=Math.max(by,16);
+    txt={x:bx,y:by,w:tw,h:tH}; say.style.left=bx+'px'; say.style.top=by+'px';
+    // Powerbank: rechts unter dem Satz (weiter rechts & tiefer als unter „believe")
+    const w1=$('w1').offsetWidth, pbW=84*PBS, pbH=137*PBS;
+    const px=cl(bx+w1*0.5-pbW/2+fs*2.6, 12, W-pbW-16), py=cl(by+tH+14+fs*1.6, 12, H-pbH-16);
+    pb.style.left=px+'px'; pb.style.top=py+'px';
+    // Buttons: direkt an der Unterkante der Figur, gleiche Breite wie die Bronze-Kante
+    const ew=(EDGE[1]-EDGE[0])*mw;
+    Object.assign(enter.style,{left:(madR.x+EDGE[0]*mw)+'px', width:ew+'px', top:(madR.y+mh)+'px',
+                               fontSize:cl(ew/24,10.5,13).toFixed(1)+'px'});
+  }
+  addEventListener('resize',()=>{ layout(); layoutCable(); if(!beamDone) hideCable(); }); layout();
+
+  // ---------- USB-C-Kabel ----------
+  const seg=[{p:[...$('segA').querySelectorAll('path')], len:1}];
+  let cabPts=[], cabMaxX=-1e9, cabMaxY=-1e9;              // Stützpunkte des Kabels (Kreuz-Lücke zwischen Kabel und Figur)
+  function layoutCable(){
+    // Stecker oben: linker USB-C-Port der Powerbank (Unterkante, 18 % + halbe Portbreite, schräge Kante +1.5px)
+    const pbx=parseFloat(pb.style.left), pby=parseFloat(pb.style.top), sx=pbx+(15+5+1.5)*PBS, sy=pby+(137-2)*PBS;
+    $('plugTopBody').setAttribute('x',(sx-4).toFixed(1)); $('plugTopBody').setAttribute('y',sy.toFixed(1));
+    const P0=[sx, sy+15];
+    // Ziel: rechte Seitenkante des rechten Buttons, mittig; Stecker (16px) liegt davor, Spitze steckt unter dem Button
+    const bx=parseFloat(enter.style.left)+parseFloat(enter.style.width), by=parseFloat(enter.style.top)+(enter.offsetHeight||44)/2;
+    const Q=[bx+17, by];                                  // Kabel endet hinten am Stecker
+    // ein einziger weicher Bogen: senkrecht aus dem Port, rechts an der Figur vorbei, unten rund und WAAGERECHT in den Stecker
+    const drop=Q[1]-P0[1], swing=cl((P0[0]-Q[0])*0.9+34, 40, 90);
+    const A=`M${P0[0].toFixed(1)} ${P0[1].toFixed(1)} C${P0[0].toFixed(1)} ${(P0[1]+drop*0.62).toFixed(1)} ${(Q[0]+swing).toFixed(1)} ${Q[1].toFixed(1)} ${Q[0].toFixed(1)} ${Q[1].toFixed(1)}`;
+    seg[0].p.forEach(p=>p.setAttribute('d',A)); const Lc=seg[0].p[0].getTotalLength(); seg[0].len=Lc+2;
+    cabPts=[]; cabMaxX=cabMaxY=-1e9;
+    for(let i=0;i<=60;i++){ const q=seg[0].p[0].getPointAtLength(Lc*i/60); cabPts.push(q.x,q.y); cabMaxX=Math.max(cabMaxX,q.x); cabMaxY=Math.max(cabMaxY,q.y); }
+    $('plugEnd').setAttribute('transform',`translate(${(bx+1).toFixed(1)} ${by.toFixed(1)})`);
+    if(cableDone) seg[0].p.forEach(p=>{ p.style.strokeDasharray='none'; p.style.strokeDashoffset='0'; });
+  }
+  let cableDone=false;
+  function cable(t){                                    // t = ms seit Start des Kabels
+    const k=cl(t/CAB,0,1), e=0.5-0.5*Math.cos(Math.PI*k), n=seg[0].len, drawn=(n+PLUG)*e;   // ein durchgehender, weicher Zug
+    const c=Math.min(drawn,n), w=cl(drawn-n,0,PLUG);
+    seg[0].p.forEach(p=>{ p.style.strokeDasharray=n.toFixed(1); p.style.strokeDashoffset=(n-c).toFixed(1); });
+    $('plugTop').style.opacity=cl(drawn/14,0,1).toFixed(3);            // Stecker oben kommt mit dem ersten Stück Kabel
+    // Stecker unten erst, wenn das Kabel angekommen ist: wird von hinten (x 17) nach vorne in den Button „weitergezeichnet"
+    $('plugClipR').setAttribute('x',(17-w).toFixed(2)); $('plugClipR').setAttribute('width',w.toFixed(2));
+    $('plugEnd').style.opacity = w>0 ? '1' : '0';
+    if(k>=1){ cableDone=true; seg[0].p.forEach(p=>{ p.style.strokeDasharray='none'; p.style.strokeDashoffset='0'; }); }
+  }
+  // vor dem Start: unsichtbar (Dash-Offset = volle Länge)
+  function hideCable(){ seg[0].p.forEach(p=>{ p.style.strokeDasharray=seg[0].len.toFixed(1); p.style.strokeDashoffset=seg[0].len.toFixed(1); }); }
+  layoutCable(); hideCable();
+
+  // Position entlang des Masken-Verlaufs (0 = Seite unten rechts, maskLen = Seite oben links)
+  const along=(x,y)=>(x-(madR.x+madR.w/2))*dir.x+(y-(madR.y+madR.h/2))*dir.y+maskLen/2;
+
+  // ---------- Flug ----------
+  const ease=(u)=>0.5*u+0.5*u*u*(3-2*u);
+  function flight(u){ const e=ease(u), bob=Math.sin(u*Math.PI*3)*10;
+    return {x:S.x+(E.x-S.x)*e+perp.x*bob, y:S.y+(E.y-S.y)*e+perp.y*bob, e}; }
+  function tailPoint(e){ const back=gw*0.40;             // Punkt HINTER der Gans: dort entstehen Kreuze & Skulptur
+    return {x:S.x+(E.x-S.x)*e-dir.x*back, y:S.y+(E.y-S.y)*e-dir.y*back}; }
+
+  // ---------- Kreuze: Schleier + Fluglinie ----------
+  const line=[], veil=[]; let lastEmitE=-1; const STEP=15;
+  const gauss=()=>{ let u=0; for(let i=0;i<3;i++) u+=Math.random(); return (u/3-0.5)*2; };
+  function emit(e,now,withVeil){
+    line.push({e, off:(Math.random()-0.5)*5, off0:gauss()*58, rot:(Math.random()-0.5)*0.35, born:now, s:6.5+Math.random()*2.5});
+    if(withVeil) for(let k=0;k<2;k++) veil.push({e, off:gauss()*80, rot:(Math.random()-0.5)*0.8, born:now, life:700+Math.random()*600,
+                                    s:5+Math.random()*3, drift:(Math.random()-0.5)*0.03});
+  }
+  function cross(x,y,s,rot,a){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.globalAlpha=a; ctx.beginPath();
+    ctx.moveTo(0,-s*0.5); ctx.lineTo(0,s*0.5); ctx.moveTo(-s*0.32,-s*0.16); ctx.lineTo(s*0.32,-s*0.16);
+    ctx.stroke(); ctx.restore();
+  }
+  let revealB=-1e9;                                       // aktuelle Masken-Kante (entlang along())
+  const cabRight=(y)=>{ let m=-1e9; for(let i=0;i<cabPts.length;i+=2) if(Math.abs(cabPts[i+1]-y)<10) m=Math.max(m,cabPts[i]); return m; };
+  // Lücke: Skulptur-Rechteck + Streifen bis rechts hinter das Kabel (kein Kreuz zwischen Kabel und Figur)
+  const inGap=(x,y)=> x>madR.x-8 && y>madR.y-8 && along(x,y)<revealB+SOFT &&
+    ((x<madR.x+madR.w+8 && y<madR.y+madR.h+8) || (x<cabMaxX+8 && y<cabMaxY+8 && x<cabRight(y)+8));
+  function draw(now){
+    ctx.clearRect(0,0,W,H); ctx.strokeStyle='#798816'; ctx.lineWidth=1.5; ctx.lineCap='round';
+    for(const c of line){
+      const a=now-c.born, off=c.off+(c.off0-c.off)*Math.exp(-a/320);
+      const p=tailPoint(c.e), x=p.x+perp.x*off, y=p.y+perp.y*off;
+      if(inGap(x,y)) continue;                              // Linie im Bereich der Skulptur unterbrochen
+      cross(x,y,c.s,c.rot,Math.min(1,a/220)*0.9);
+    }
+    for(let i=veil.length-1;i>=0;i--){
+      const v=veil[i], a=now-v.born; if(a>v.life){ veil.splice(i,1); continue; }
+      const k=a/v.life, p=tailPoint(v.e), off=v.off*(1+k*0.35);
+      cross(p.x+perp.x*off-dir.x*a*v.drift*10, p.y+perp.y*off-dir.y*a*v.drift*10, v.s, v.rot+k*0.6, Math.sin(Math.PI*k)*0.55);
+    }
+  }
+
+  // ---------- Skulptur-Maske: sichtbar ist alles HINTER der Kante (Richtung Startecke) ----------
+  let revealed=false, revealAt=0;
+  function setMask(b){
+    revealB=b;
+    if(b>=maskLen+SOFT){ mad.style.webkitMaskImage=mad.style.maskImage='none'; return true; }
+    const g=`linear-gradient(${maskAng.toFixed(2)}deg,#000 0px,#000 ${Math.max(0,b).toFixed(1)}px,transparent ${(b+SOFT).toFixed(1)}px)`;
+    mad.style.webkitMaskImage=mad.style.maskImage=g; return false;
+  }
+
+  // ---------- Linie aus dem Auge schreibt den Satz ----------
+  let beamDone=false;
+  function beam(t){                                       // t = ms seit vollständigem Erscheinen der Skulptur
+    const ty=txt.y+txt.h*0.62;                           // Schreibhöhe (etwa Mitte der Kleinbuchstaben)
+    if(t<BEAM_IN){                                       // Linie schießt vom Auge zum Satzanfang
+      const k=1-Math.pow(1-t/BEAM_IN,3);
+      showBeam(eye.x,eye.y, eye.x+(txt.x-eye.x)*k, eye.y+(ty-eye.y)*k); say.style.clipPath='inset(-20% 100% -20% 0)';
+    } else if(t<BEAM_IN+WRITE){                          // Spitze fährt schreibend über den Satz
+      const k=(t-BEAM_IN)/WRITE, px=txt.x+txt.w*k, wob=Math.sin(k*Math.PI*22)*txt.h*0.16;
+      showBeam(eye.x,eye.y, px, ty+wob); say.style.clipPath=`inset(-20% ${((1-k)*100).toFixed(2)}% -20% 0)`;
+    } else if(t<BEAM_IN+WRITE+BEAM_OUT){                 // Linie zieht sich vom Auge zum Satzende zurück
+      const k=1-Math.pow(1-(t-BEAM_IN-WRITE)/BEAM_OUT,2), ex=txt.x+txt.w;
+      showBeam(eye.x+(ex-eye.x)*k, eye.y+(ty-eye.y)*k, ex, ty); say.style.clipPath='none';
+    } else { beamL.setAttribute('visibility','hidden'); say.style.clipPath='none'; beamDone=true; }
+  }
+  function showBeam(x1,y1,x2,y2){
+    beamL.setAttribute('x1',x1.toFixed(1)); beamL.setAttribute('y1',y1.toFixed(1));
+    beamL.setAttribute('x2',x2.toFixed(1)); beamL.setAttribute('y2',y2.toFixed(1)); beamL.setAttribute('visibility','visible');
+  }
+
+  // ---------- Laden / Buttons ----------
+  function setPct(p){
+    const n=Math.round(p); pct.textContent=n; pb.setAttribute('aria-valuenow',n);
+    if(n>=100){ pb.classList.remove('charging'); if(!enter.classList.contains('show')){ enter.classList.add('show'); showAt=performance.now(); } }
+  }
+  // Ton-Wahl merken ('on'|'off', sessionStorage 'nihanzo-sound' – liest die Startseite) -> ausblenden -> Startseite (beginnt mit dem Vorhang)
+  let leaving=false;
+  enter.addEventListener('click',(e)=>{
+    const b=e.target.closest('button'); if(!b || leaving) return; leaving=true;
+    try{ sessionStorage.setItem('nihanzo-sound', b.dataset.sound); }catch(_){}
+    document.body.style.transition='opacity .8s ease'; document.body.style.opacity='0';
+    setTimeout(()=>location.assign('startpage.html'), 800);
+  });
+  // Zurück-Taste (bfcache): Seite wieder sichtbar machen
+  addEventListener('pageshow',(e)=>{ if(e.persisted){ leaving=false; document.body.style.transition='none'; document.body.style.opacity='1'; } });
+
+  // ---------- Ablauf ----------
+  const t0=performance.now(); let done=false, beamEndAt=0, showAt=0;
+  function frame(now){
+    const t=now-t0, base=cl(t/DURATION,0,1);
+    setPct(base<1 ? Math.min(99, base*100+Math.random()*1.2) : 100);
+    const u=reduce?1:cl((t-FLY_START)/FLY_DUR,0,1), f=flight(u);
+    goose.style.transform=`translate(${(f.x-gw/2).toFixed(1)}px,${(f.y-gh/2).toFixed(1)}px) rotate(${(GOOSE_ROT+Math.sin(u*Math.PI*3+0.6)*2).toFixed(2)}deg)`;
+    goose.style.visibility = u>=1 ? 'hidden' : '';
+    // Kreuze entlang des Weges (lückenlos, auch wenn Frames ausfallen)
+    // Start bei 0 (nicht beim ersten Frame): fallen Frames aus (Hintergrund-Tab), wird die Linie vollständig nachgeholt;
+    // Schleier nur direkt hinter der Gans (nicht für nachgeholte Stücke)
+    if(u>0){ if(lastEmitE<0) lastEmitE=0; const stepE=STEP/L;
+      while(lastEmitE+stepE<=f.e){ lastEmitE+=stepE; const tp=tailPoint(lastEmitE);
+        if(tp.x>-20 && tp.y>-20 && tp.x<W+20 && tp.y<H+20) emit(lastEmitE,now,(f.e-lastEmitE)*L<160); } }
+    // Skulptur erscheint schräg direkt hinter der Gans
+    if(!revealed){ const tp=tailPoint(f.e); if(setMask(reduce?1e9:along(tp.x,tp.y))){ revealed=true; revealAt=now; } }
+    if(revealed && !beamDone){ beam(reduce?1e9:now-revealAt); if(beamDone) beamEndAt=now; }
+    // Kabel erst, wenn der Satz steht UND die Buttons da sind (der Stecker soll in einen sichtbaren Button)
+    if(beamDone && showAt && !cableDone) cable(reduce?1e9:now-Math.max(beamEndAt,showAt+250));
+    draw(now);
+    if(base>=1 && u>=1 && revealed && beamDone && cableDone && veil.length===0){ done=true; setPct(100); }
+    else requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  // Größenänderung / Schrift geladen: Canvas wird geleert -> sofort neu zeichnen (auch im Hintergrund-Tab)
+  addEventListener('resize',()=>{ if(revealed) setMask(1e9); draw(performance.now()); if(done) requestAnimationFrame(frame); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ layout(); layoutCable(); if(!beamDone) hideCable();
+    if(revealed) setMask(1e9); draw(performance.now()); });
+})();
+</script>
 </body>
 </html>

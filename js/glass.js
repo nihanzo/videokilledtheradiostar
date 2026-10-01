@@ -149,7 +149,7 @@
   }
   addEventListener('resize', layout); layout();
 
-  let tS = 0, carS = 0;
+  let tS = 0, carS = 0, drawn = false;
   (function frame(){
     const tRaw = (window.__glass && window.__glass.t) || 0;
     tS += (tRaw - tS)*0.15;
@@ -162,7 +162,7 @@
       pivot.rotation.set(tS*Math.PI*2, 0, sway);          // Anflug: eine Umdrehung kopfüber
       pivot.updateMatrixWorld(true);
       updatePour(carS, performance.now());
-      renderer.render(scene, camera);
-    }
+      renderer.render(scene, camera); drawn = true;
+    } else if(drawn){ renderer.clear(); drawn = false; }   // ausgeblendet: leeren, sonst blitzt beim Wiedereinblenden kurz das alte Bild auf
     requestAnimationFrame(frame);
   })();

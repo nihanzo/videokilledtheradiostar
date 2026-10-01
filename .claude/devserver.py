@@ -10,4 +10,5 @@ class NoCache(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8756
+http.server.ThreadingHTTPServer.request_queue_size = 128   # Standard 5 -> bei vielen parallelen Bildern ERR_CONNECTION_RESET
 http.server.ThreadingHTTPServer(('', port), functools.partial(NoCache, directory=ROOT)).serve_forever()
