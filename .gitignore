@@ -14,3 +14,7 @@ assets/raw/
 .claude/video/kout/
 .claude/video/ccfilter
 .claude/video/*.raw
+
+# Testkopien von .claude/test/make.py (neu erzeugbar)
+.claude/test/*-alt.html
+.claude/test/*-neu.html

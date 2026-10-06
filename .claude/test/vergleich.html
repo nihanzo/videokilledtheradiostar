@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Vergleich alt/neu</title>
+<link rel="icon" href="data:,">
+<!-- Lädt alt (git HEAD) und neu (Arbeitsstand) gleichzeitig in gleich großen iframes und vergleicht jedes Element
+     (Lage, Größe, Sichtbarkeit), sammelt Fehler/fehlende Dateien und misst Gläser + Rosen.
+     Vorher: python3 .claude/test/make.py   Start: run()   Ergebnis: summary()   Ansehen: show(1920,1080,'at=video') -->
+<style>
+  html,body{margin:0;background:#1b1b1b;color:#ccc;font:11px/1.3 ui-monospace,monospace}
+  .cell{position:relative;overflow:hidden;width:100vw;height:44vh;background:#000;border-bottom:2px solid #444}
+  .cell b{position:absolute;z-index:2;left:6px;top:4px;color:#ff0;background:#0008;padding:1px 4px}
+  iframe{position:absolute;left:0;border:0;transform-origin:0 0;background:#fff}
+  #log{height:11vh;overflow:auto;margin:0;padding:4px 6px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="cell" id="ca"><b>alt</b><iframe id="fa"></iframe></div>
+<div class="cell" id="cb"><b>neu</b><iframe id="fb"></iframe></div>
+<pre id="log"></pre>
+<script>
+const SIZES=[[1280,720],[1280,800],[1280,1024],[1366,768],[1440,789],[1440,900],[1512,982],[1536,864],[1600,900],
+             [1680,1050],[1728,1117],[1920,955],[1920,1080],[1920,1200],[2560,1080],[2560,1440],[3440,1440],[3840,2160]];
+const STATES=['','intro=0','at=video','at=galerie','at=laeufer','at=reifen','at=glas','at=karussell','at=fotos','at=herz','at=wuerfel'];
+const fa=document.getElementById('fa'), fb=document.getElementById('fb'), ca=document.getElementById('ca'), cb=document.getElementById('cb');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const log=s=>{ const l=document.getElementById('log'); l.textContent+=s+'\n'; l.scrollTop=1e9; };
+let nav=0;
+
+// WebGL-Kontexte der alten Seite freigeben (sonst „Too many active WebGL contexts“ nach vielen Ladevorgängen)
+function freeGL(f){
+  try{ for(const c of f.contentDocument.querySelectorAll('canvas')){
+    const gl=c.getContext('webgl2')||c.getContext('webgl'), x=gl&&gl.getExtension('WEBGL_lose_context'); x&&x.loseContext(); } }catch(_){}
+}
+// iframe in voller Breite, unten bündig (Gläser + Rosen sichtbar)
+function place(f,cell,W,H){
+  const sc=cell.clientWidth/W;
+  f.style.width=W+'px'; f.style.height=H+'px'; f.style.top=(cell.clientHeight-H*sc)+'px'; f.style.transform='scale('+sc+')';
+}
+async function load(tag,W,H,qs){
+  freeGL(fa); freeGL(fb); fa.src='about:blank'; fb.src='about:blank'; await sleep(80);
+  place(fa,ca,W,H); place(fb,cb,W,H);
+  const q='?'+(qs?qs+'&':'')+'mute&n='+(++nav);
+  const one=(f,u)=>Promise.race([new Promise(res=>{
+      const h=()=>{ let href=''; try{ href=f.contentWindow.location.href; }catch(_){}
+        if(href.includes(u)){ f.removeEventListener('load',h); res(true); } };
+      f.addEventListener('load',h); f.src='/.claude/test/'+u+q; }),
+    sleep(20000).then(()=>false)]);
+  const ok=await Promise.all([one(fa,tag+'-alt.html'),one(fb,tag+'-neu.html')]);
+  if(!ok.every(Boolean)) log('ZEITÜBERSCHREITUNG '+tag+' '+W+'x'+H+' '+qs);
+}
+function keyOf(el){
+  const p=[];
+  while(el&&el.nodeType===1&&el.tagName!=='BODY'){
+    if(el.id){ p.unshift('#'+el.id); break; }
+    let i=1,s=el; while((s=s.previousElementSibling)) i++;
+    p.unshift(el.tagName.toLowerCase()+(el.classList[0]?'.'+el.classList[0]:'')+':'+i); el=el.parentElement;
+  }
+  return p.join('>');
+}
+function snap(f){
+  const w=f.contentWindow, d=w.document, o={};
+  for(const el of d.body.querySelectorAll('*')){
+    const t=el.tagName; if(t==='SCRIPT'||t==='STYLE'||t==='TEMPLATE') continue;
+    const s=w.getComputedStyle(el), r=el.getBoundingClientRect();
+    o[keyOf(el)]=[r.x,r.y,r.width,r.height].map(Math.round).join(',')+'|'+(s.display==='none'?'none':'')+'|'+(+s.opacity).toFixed(2)
+      +'|'+s.visibility+(t==='CANVAS'?'|'+el.width+'x'+el.height:'')+(t==='IMG'?'|'+(el.currentSrc||'').split('/').pop():'');
+  }
+  o.__doc=d.documentElement.scrollHeight+'|'+Math.round(w.scrollY);
+  return o;
+}
+function same(a,b){
+  if(a===b) return true; if(a==null||b==null) return false;
+  const A=a.split('|'), B=b.split('|'); if(A.length!==B.length) return false;
+  for(let i=1;i<A.length;i++) if(A[i]!==B[i]) return false;
+  const x=A[0].split(',').map(Number), y=B[0].split(',').map(Number);
+  return x.length===y.length && x.every((v,i)=>Math.abs(v-y[i])<=1);
+}
+// a1/a2 = alt zweimal gemessen, b1/b2 = neu; was sich zwischen den zwei Messungen bewegt (Animation), zählt nicht
+function cmp(a1,a2,b1,b2){
+  const keys=new Set([...Object.keys(a1),...Object.keys(a2),...Object.keys(b1),...Object.keys(b2)]), d=[];
+  let unstable=0;
+  for(const k of keys){
+    if(!same(a1[k],a2[k])||!same(b1[k],b2[k])){ unstable++; continue; }
+    if(!same(a2[k],b2[k])) d.push([k,a2[k],b2[k]]);
+  }
+  return {d,unstable,n:keys.size};
+}
+function errs(f){
+  const w=f.contentWindow, e=(w.__errs||[]).slice();
+  try{ for(const r of w.performance.getEntriesByType('resource')) if(r.responseStatus>=400) e.push('http '+r.responseStatus+': '+r.name.replace(location.origin,'')); }catch(_){}
+  return [...new Set(e)];
+}
+// Gläser/Rosen: Abstände zu Statue (sichtbare Kante 73,96 % der Bildbreite), Figur (43,3–55 % des Bronze-Bands), Ton-Knopf
+function geo(f){
+  const w=f.contentWindow, d=w.document, H=w.innerHeight, R=s=>d.querySelector(s).getBoundingClientRect(), r=Math.round;
+  const st=R('.corner--statue'), band=R('.frame--bottom'), ro=R('.corner--roses'), eq=R('#eq');
+  const g=[...d.querySelectorAll('.clink img')].map(i=>i.getBoundingClientRect());
+  const L=Math.min(g[0].left,g[1].left), Rr=Math.max(g[0].right,g[1].right), B=Math.max(g[0].bottom,g[1].bottom);
+  const statR=st.left+0.7396*st.width, figL=band.left+0.433*band.width, figR=band.left+0.55*band.width;
+  return {glasH:r(R('.clink').height), glasLinks:r(L-statR), glasRechts:r(figL-Rr), glasUnten:r(H-B), glasMitte:r((L+Rr)/2-(statR+figL)/2),
+          rosenH:r(ro.height), rosenLinks:r(ro.left-figR), rosenRechts:r(eq.left-ro.right), rosenUnten:r(H-ro.bottom)};
+}
+
+async function measure(res,tag,W,H,qs){
+  await load(tag,W,H,qs); await sleep(1500);
+  const a1=snap(fa), b1=snap(fb); await sleep(700); const a2=snap(fa), b2=snap(fb);
+  const c=cmp(a1,a2,b1,b2), k=W+'x'+H+' '+tag+(qs?' '+qs:'');
+  res.rows.push({k,diff:c.d.length,unstable:c.unstable,n:c.n});
+  for(const [key,x,y] of c.d){ const e=res.diffs[key]||(res.diffs[key]={n:0,bsp:k+'  '+x+'  ->  '+y}); e.n++; }
+  for(const [who,f] of [['alt',fa],['neu',fb]]) for(const e of errs(f)){ const kk=who+' '+e; (res.fehler[kk]||(res.fehler[kk]=[])).push(k); }
+  if(tag==='start'&&qs==='intro=0') res.geo[W+'x'+H]={alt:geo(fa),neu:geo(fb)};
+  if(tag==='start'&&qs===''){   // SCROLL-Rahmen im Vorhang: stimmt er schon ohne Neu-Auslegen (resize)?
+    const ring=f=>{ const d=f.contentDocument, m=()=>[...d.querySelectorAll('#scrollRing text')].map(t=>{ const r=t.getBoundingClientRect(); return [r.left,r.top,r.right,r.bottom].map(Math.round).join(','); }).join(' ');
+      const a=m(); f.contentWindow.dispatchEvent(new Event('resize')); return a===m(); };
+    res.ring[W+'x'+H]=(ring(fa)?'ok':'falsch')+'/'+(ring(fb)?'ok':'falsch');
+  }
+  log(k+': '+c.d.length+' Unterschiede ('+c.unstable+' bewegt, '+c.n+' Elemente)');
+}
+async function run(sizes=SIZES,states=STATES){
+  const res=window.__res={t0:Date.now(),rows:[],diffs:{},fehler:{},geo:{},ring:{},done:false};
+  for(const [W,H] of sizes){
+    await measure(res,'lade',W,H,'');
+    for(const qs of states) await measure(res,'start',W,H,qs);
+  }
+  res.done=true; res.sek=Math.round((Date.now()-res.t0)/1000); log('fertig nach '+res.sek+' s');
+}
+function summary(){
+  const r=window.__res; if(!r) return 'läuft nicht';
+  return {fertig:r.done, durchlaeufe:r.rows.length, mitUnterschied:r.rows.filter(x=>x.diff).map(x=>x.k+': '+x.diff),
+          maxBewegt:Math.max(0,...r.rows.map(x=>x.unstable)), elemente:r.rows.length?r.rows[r.rows.length-1].n:0,
+          unterschiede:r.diffs, fehler:Object.fromEntries(Object.entries(r.fehler).map(([k,v])=>[k,v.length+'x, z. B. '+v[0]])), geo:r.geo, ringAltNeu:r.ring};
+}
+async function show(W,H,qs){ await load('start',W,H,qs); }
+</script>
+</body>
+</html>

@@ -313,13 +313,13 @@
   .corner--roses, .clink{ --bandL:calc(var(--flowIn) - 9.5vh); --figX:calc(var(--bandL) + 0.484 * (100vw - var(--bandL)));
     --figL:calc(var(--bandL) + 0.433 * (100vw - var(--bandL))); --statR:calc(0.509 * clamp(300px,34vw,600px)); }
   /* Rosen in der Vase: unten rechts, mittig zwischen der Figur und dem Ton-Knopf (eq: right 20px + 85px breit) */
-  .corner--roses{ bottom:0; height:clamp(100px,18vh,200px); width:auto;
+  .corner--roses{ bottom:0; height:clamp(90px,16.2vh,180px); width:auto;
     left:calc((var(--figX) + 100vw - 105px) / 2); transform:translate(-50%, 3%);
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.2)); }
   /* Zwei Gläser stoßen an: genau in der Mitte der Lücke zwischen Statue (sichtbare Kante) und Figur (linke Kante); jedes
      Glas um seinen Fuß zur Mitte gekippt (±16°), Abstand der Füße so, dass sich die Ränder oben berühren (Glas 268×600) */
-  .clink{ position:fixed; z-index:40; pointer-events:none; bottom:2.5vh;
-    --gh:clamp(65px, min(14.5vh, (var(--figL) - var(--statR)) * 0.4), 160px);   /* halbe Größe, passt in die Lücke */
+  .clink{ position:fixed; z-index:40; pointer-events:none; bottom:1vh;
+    --gh:clamp(58.5px, min(13.05vh, (var(--figL) - var(--statR)) * 0.36), 144px);   /* halbe Größe −10 %, passt in die Lücke */
     height:var(--gh); width:calc(var(--gh) * 1.32);
     left:calc((var(--statR) + var(--figL)) / 2); transform:translateX(-50%); }
   .clink img{ position:absolute; bottom:0; height:100%; width:auto; transform-origin:50% 100%;
@@ -616,6 +616,8 @@
     }
     layoutRing(); addEventListener('resize', ()=>{ if(!done) layoutRing(); });
     document.fonts && document.fonts.load('300 20px "Turret Road"').then(()=>{ if(!done) layoutRing(); }, ()=>{});   // Breite erst mit der echten Schrift
+    // das Google-Font-CSS lädt nicht blockierend nach (load() oben findet die Schrift dann noch nicht) -> neu auslegen, sobald sie da ist
+    document.fonts && document.fonts.addEventListener('loadingdone', ()=>{ if(!done) layoutRing(); });
 
     const wrap = hero.querySelector('.hero__wrap'), A_END = 0.38;   // 1) rechts -> Grünkohl  2) oben + unten -> ganz weg
     function finish(){
