@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Schrift: eigene „Nihanzo Grotesk“ (assets/fonts/nihanzo, nach dem Stil des Musterbilds gezeichnet: sehr fett,
+     weiche Ecken, enge Laufweite; nur Kleinbuchstaben, Ziffern und Satzzeichen – Großbuchstaben zeigen die Kleinbuchstaben) -->
+<link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
+<link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
+<!-- SCROLL-Rahmen im Vorhang: Turret Road 300 (eckige 2000er-Blockschrift, dünn) -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Turret+Road:wght@300&display=swap" media="print" onload="this.media='all'" />
 <title>nihanzo — startseite</title>
 <!-- Hintergrund-Varianten: Standard = Glas-Foto (warm) in der Mitte; ?bg=grau (Glas-Foto blau-grau) · ?bg=senf (Senf-Verlauf) · ?bg=kugeln (Kugel-Tunnel, voll) -->
 <script>{ const b = new URLSearchParams(location.search).get('bg'); if(['senf','kugeln','grau'].includes(b)) document.documentElement.classList.add('bg-'+b); }</script>
@@ -12,12 +19,15 @@
    - Kissen-Ring (cushion-ring) rahmt die Mitte
    - Ecken: Marmor (oben-links), Statue (unten-links, bündig unten), Gebäude (oben-rechts)
    - Mitte: Fahrradkette, Kamera im größten Kettenglied (Wand-Hover, Dizzy-Filter, Kissen-Aufblasen entfernt)
-   - 1. Kreis (links): Schreib-Animation "enjoy your scroll" (Animo, #C65563) + Klick-Sound
+   - 1. Kreis (links): Schreib-Animation "enjoy your scroll" (Nihanzo Grotesk, Altrosa) + Klick-Sound
    - 2. Kreis (in der Kette): kleines Kamera-Bild
 -->
 <style>
+  @font-face{ font-family:'Nihanzo Grotesk'; src:url('assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4') format('truetype');
+    font-weight:100 900; font-display:swap; }   /* eine Stärke für alle Gewichte -> kein künstliches Fettmachen */
   :root{
-    --accent:#C65563;
+    --accent:#6F798F;   /* alle Schrift + Rosen-Balken (außer sinc · moir) */
+    --font:'Nihanzo Grotesk',system-ui,sans-serif;
     --center:#ECE6EA;   /* einfarbig, hell – kein dunkleres Lila */
     /* sichtbare Blumenbreite links (75 % der früheren linken Kissenbreite) + Gebäudebreite oben rechts */
     --flowIn: max(80px, 0.75 * (50vw - 0.36 * max(100vw, 177.78vh)));
@@ -27,15 +37,11 @@
     --topReach: calc(var(--topW) * 362 / 3400 * 1.05);
     --bldW: clamp(220px,28vw,520px);
   }
-  @font-face{
-    font-family:'Animo';
-    src:url('assets/fonts/animo/Animo.otf') format('opentype');
-    font-display:swap;
-  }
   *{ margin:0; padding:0; box-sizing:border-box; }
   html,body{ height:100%; }
   body{
-    background:#efe9ee; font-family:system-ui,sans-serif; overflow-x:hidden; cursor:none;
+    background:#efe9ee; font-family:var(--font); font-weight:800; text-transform:lowercase;   /* alles klein */
+    overflow-x:hidden; cursor:none;
   }
 
   /* ---- fixe Bühne: bleibt über den ganzen Endlos-Scroll ---- */
@@ -74,7 +80,16 @@
     left:calc(var(--flowIn) - 9.5vh); right:0;
     top:calc(var(--topReach) * 0.2);   /* höchste Lücke zwischen den kopfüber hängenden Häusern (gemessen ≈ 21 %) */
     bottom:calc((100vw - var(--flowIn) + 9.5vh) * 403 / 3800 * 0.93);
-    background:url(assets/img/bg-glas.webp) center / cover no-repeat; }
+    background:url(assets/img/bg-glas.webp) center / cover no-repeat; overflow:hidden; }
+  /* leichte Film-Körnung über dem Senf-Bild (grain.webp = nahtlose 320er-Kachel, helle + dunkle Körner mit Alpha);
+     springt 5× pro Sekunde an eine andere Stelle (nur transform -> kein Neuzeichnen) */
+  .bgPic::after{ content:''; position:absolute; inset:-160px; pointer-events:none; opacity:.26;
+    background:url(assets/img/grain.webp) 0 0 / 160px 160px repeat; will-change:transform;
+    animation:grain 1.6s steps(1,end) infinite; }
+  @keyframes grain{ 0%{transform:translate(0,0)} 12.5%{transform:translate(-61px,37px)} 25%{transform:translate(43px,-89px)}
+    37.5%{transform:translate(-103px,-17px)} 50%{transform:translate(71px,113px)} 62.5%{transform:translate(-29px,-131px)}
+    75%{transform:translate(127px,53px)} 87.5%{transform:translate(-83px,97px)} }
+  @media (prefers-reduced-motion:reduce){ .bgPic::after{ animation:none; } }
   .bgWhite{ position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; }
   /* Varianten füllen den ganzen Schirm */
   .core::before{ content:''; position:absolute; inset:0; pointer-events:none; }
@@ -101,7 +116,7 @@
   .typer{
     position:fixed; right:71%; top:50%; transform:translateY(-50%);
     z-index:16; text-align:right; white-space:nowrap; pointer-events:none;
-    font-family:'Animo',system-ui,sans-serif; color:var(--accent);
+    font-family:var(--font); color:var(--accent);
     font-size:clamp(16px,2vw,32px); letter-spacing:.02em;
     text-shadow:0 1px 2px rgba(255,255,255,.55);
   }
@@ -133,7 +148,7 @@
   .videoPlayer.show{ pointer-events:auto; }
   .videoPlayer video{ width:100%; height:100%; object-fit:cover; display:block; }
   .videoPlayer .placeholder{ position:absolute; inset:0; display:grid; place-items:center; place-content:center; gap:12px;
-    color:#f4f4e1; font-family:'Animo',system-ui,sans-serif; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); font-family:var(--font); letter-spacing:.03em; text-transform:lowercase;
     background:radial-gradient(120% 120% at 50% 30%,#26262b,#0d0d0f); }
   .videoPlayer .placeholder .play{ width:64px; height:64px; border-radius:50%;
     border:2px solid rgba(244,244,225,.7); display:grid; place-items:center; }
@@ -157,9 +172,11 @@
     background:url('assets/img/runner-sheet-4x4.webp') 0% 0% / 400% 400% no-repeat; }
 
   /* Reifen: fährt zwischen Läufer und Glas INNEN an der rechten Kante der linken Glas-Ellipse hinunter (Position per JS,
-     Perspektive bleibt, keine Drehung); kommt hinter den Bergen hervor und verschwindet hinter Bronze/Blumen */
+     Perspektive bleibt, keine Drehung); kommt hinter den Bergen hervor und verschwindet hinter Bronze/Blumen.
+     Rollen = freigestelltes Firefly-Video als Bildfolge (7×7 Raster, 49 Bilder), Bild folgt dem zurückgelegten Weg */
   .tire{ position:fixed; left:0; top:0; z-index:17; pointer-events:none; visibility:hidden;
-    height:clamp(90px,13vh,170px); aspect-ratio:539/640; will-change:transform; }
+    height:clamp(90px,13vh,170px); aspect-ratio:289/340; will-change:transform;
+    background:url('assets/img/reifen-roll.webp') 0% 0% / 700% 700% no-repeat; }
 
   /* ---- Gleitende TRANSPARENTE Kästen (nahtloser Zug rechts -> links) ---- */
   /* der Kasten selbst ist nur ein Fenster (Hover) + Beschriftung (weiße Karte) + Faden */
@@ -178,7 +195,7 @@
   #box3 .sb-inner{ top:50%; }
   #box4 .sb-inner{ top:22%; }
   .sb-img{ height:clamp(190px,32vh,380px); width:auto; display:block; }
-  .sb-cap, .sb-text span{ font-family:'Animo',system-ui,sans-serif; color:var(--accent);
+  .sb-cap, .sb-text span{ font-family:var(--font); color:var(--accent);
     letter-spacing:.02em; line-height:1.08; }
   /* Wort-Boxen sehen aus wie ein macOS-Fenster (Titelleiste + Ampel-Punkte) */
   .sb-text{ background:#fdfdfd; border-radius:11px; padding:36px 26px 18px; gap:4px;
@@ -190,13 +207,13 @@
     box-shadow:15px 0 0 #febc2e, 30px 0 0 #28c840; }
   .sb-cap{ font-size:clamp(16px,2.1vw,30px);      /* Untertitel zentriert unter dem Bild */
     background:rgba(255,255,255,.96); border-radius:9px; padding:4px 13px; }
-  .sb-text span{ font-size:clamp(20px,2.7vw,40px); }
+  .sb-text span{ font-size:calc(clamp(20px,2.7vw,40px) - 4pt); }   /* 2 × 2pt kleiner */
   /* kleine URL-Leiste in der Titelleiste */
   .sb-url{ position:absolute; top:5px; left:58px; right:12px; height:17px; z-index:1;
     background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:5px;
-    font:500 10px/17px system-ui,-apple-system,sans-serif; font-style:normal; color:#8a8a90;
+    font:800 10px/17px var(--font); font-style:normal; color:var(--accent);
     text-align:left; padding-left:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .sb-text .plus{ font-size:.72em; opacity:.85; }
+  .sb-text .plus{ font-size:calc((clamp(20px,2.7vw,40px) - 4pt) * .5); opacity:.85; }   /* halb so groß wie die Wörter (vorher fest ~11 px) */
 
   /* Sound-Control: Equalizer unten rechts in der Ecke, senffarben (Balken schlagen nach oben aus) */
   .eq{
@@ -219,9 +236,9 @@
   /* Karussell: vorderstes Video anklickbar (Hover „open" weiß) -> Player; außerhalb Hover „close" schwarz */
   .vcard.front{ pointer-events:auto; cursor:none; }
   .hoverLbl{ position:fixed; left:0; top:0; z-index:9998; pointer-events:none; opacity:0; transition:opacity .18s ease;
-    font-family:'Animo',system-ui,sans-serif; font-size:14px; letter-spacing:.16em; text-transform:uppercase; }
-  .hoverLbl.open{ color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.45); }
-  .hoverLbl.close{ color:#111; text-shadow:0 1px 3px rgba(255,255,255,.6); }
+    font-family:var(--font); font-size:14px; letter-spacing:.03em; text-transform:lowercase; }
+  .hoverLbl.open{ color:var(--accent); text-shadow:0 1px 6px rgba(0,0,0,.45); }
+  .hoverLbl.close{ color:var(--accent); text-shadow:0 1px 3px rgba(255,255,255,.6); }
   .vpCatch{ position:fixed; inset:0; z-index:19; display:none; cursor:none;
     background:rgba(236,230,234,0); transition:background .45s ease; }
   .vpCatch.on{ display:block; background:rgba(236,230,234,.55); }
@@ -231,9 +248,9 @@
   .vplayer video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .vplayer .vph{ position:absolute; inset:0; display:grid; place-items:center;
     background:radial-gradient(120% 120% at 40% 30%,#34323a,#111014);
-    color:#f4f4e1; font-family:'Animo',system-ui,sans-serif; font-size:16px; letter-spacing:.18em; text-transform:uppercase; }
+    color:var(--accent); font-family:var(--font); font-size:16px; letter-spacing:.03em; text-transform:lowercase; }
 
-  /* Scroll-Orientierung rechts am Rand: Start · 3D · About · Video · Galerie (dickere Balken, Animo + Akzent) */
+  /* Scroll-Orientierung rechts am Rand: Start · 3D · About · Video · Galerie (Rosen-Balken, Akzent Altrosa) */
   .progress{ position:fixed; right:16px; top:50%; transform:translateY(-50%);
     z-index:78; display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none;
     transition:opacity .6s ease; }
@@ -241,14 +258,14 @@
   .progress .seg{ position:relative; display:flex; align-items:center; gap:10px; }
   /* unsichtbare, etwas größere Klickfläche über dem Balken (Klick = Sprung zum Anfang des Abschnitts) */
   .progress .hit{ position:absolute; right:-4px; top:-4px; bottom:-4px; width:35px; pointer-events:auto; cursor:none; }
-  .progress .lbl{ font-family:'Animo',system-ui,sans-serif; color:var(--accent);
-    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+  .progress .lbl{ font-family:var(--font); color:var(--accent);
+    font-size:12px; letter-spacing:.03em; text-transform:lowercase;
     text-shadow:0 1px 2px rgba(255,255,255,.5); transition:opacity .25s ease; opacity:0; }
   .progress .lbl{ background:#fff; border-radius:5px; padding:3px 7px; text-shadow:none; }
   .progress .seg:has(.hit:hover) .lbl{ opacity:1; }     /* Beschriftung nur beim Hover über den Balken */
   /* jeder Balken = umgedrehte Rose (Linolschnitt-Maske aus assets/raw/rose-linocut.png, 180° gedreht): Stiel oben,
      Blüte hängt nach unten; Füllung läuft den Stiel hinunter in die Blüte */
-  .progress .track{ position:relative; width:27px; height:61px; pointer-events:none; background:rgba(198,85,99,.20);
+  .progress .track{ position:relative; width:27px; height:61px; pointer-events:none; background:rgba(111,121,143,.35);
     -webkit-mask:url('assets/img/rose-mask.png') center / 100% 100% no-repeat; mask:url('assets/img/rose-mask.png') center / 100% 100% no-repeat; }
   .progress .fill{ position:absolute; left:0; top:0; width:100%; height:100%;
     transform-origin:50% 0; transform:scaleY(0); will-change:transform;   /* Füllung per transform (kein Layout) */
@@ -277,7 +294,7 @@
     opacity:0; visibility:hidden; overflow:hidden; background:#16151a; will-change:transform,opacity,filter; }
   .vcard .vph{ position:absolute; inset:0; display:grid; place-items:center;
     background:radial-gradient(120% 120% at 40% 30%,#34323a,#111014);
-    color:#f4f4e1; font-family:'Animo',system-ui,sans-serif; font-size:12px; letter-spacing:.16em; text-transform:uppercase; }
+    color:var(--accent); font-family:var(--font); font-size:12px; letter-spacing:.03em; text-transform:lowercase; }
   .vcard::after{ content:''; position:absolute; inset:0; background:#f3eff2; opacity:var(--milk,0); }  /* milchiger Schleier hinten */
   .glass3d canvas, .heart3d canvas{ width:100%; height:100%; display:block; }
 
@@ -291,13 +308,31 @@
     filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)); }
   .corner--building{ top:0; right:0; width:var(--bldW);
     filter:drop-shadow(0 8px 22px rgba(0,0,0,.18)); }
+  /* Lage der Figur im Bronze-Band (frame-bronze.webp: Kopf von 43,3 % bis 55 %, Mitte 48,4 %; Band beginnt bei
+     flowIn − 9.5vh) und der Statue (sichtbare rechte Kante = 73,9 % der Bildbreite, Bild um 23 % nach links versetzt) */
+  .corner--roses, .clink{ --bandL:calc(var(--flowIn) - 9.5vh); --figX:calc(var(--bandL) + 0.484 * (100vw - var(--bandL)));
+    --figL:calc(var(--bandL) + 0.433 * (100vw - var(--bandL))); --statR:calc(0.509 * clamp(300px,34vw,600px)); }
+  /* Rosen in der Vase: unten rechts, mittig zwischen der Figur und dem Ton-Knopf (eq: right 20px + 85px breit) */
+  .corner--roses{ bottom:0; height:clamp(100px,18vh,200px); width:auto;
+    left:calc((var(--figX) + 100vw - 105px) / 2); transform:translate(-50%, 3%);
+    filter:drop-shadow(0 10px 24px rgba(0,0,0,.2)); }
+  /* Zwei Gläser stoßen an: genau in der Mitte der Lücke zwischen Statue (sichtbare Kante) und Figur (linke Kante); jedes
+     Glas um seinen Fuß zur Mitte gekippt (±16°), Abstand der Füße so, dass sich die Ränder oben berühren (Glas 268×600) */
+  .clink{ position:fixed; z-index:40; pointer-events:none; bottom:2.5vh;
+    --gh:clamp(65px, min(14.5vh, (var(--figL) - var(--statR)) * 0.4), 160px);   /* halbe Größe, passt in die Lücke */
+    height:var(--gh); width:calc(var(--gh) * 1.32);
+    left:calc((var(--statR) + var(--figL)) / 2); transform:translateX(-50%); }
+  .clink img{ position:absolute; bottom:0; height:100%; width:auto; transform-origin:50% 100%;
+    filter:drop-shadow(0 8px 16px rgba(0,0,0,.18)); }
+  .clink img:first-child{ left:0; transform:rotate(16deg); }
+  .clink img:last-child{ right:0; transform:scaleX(-1) rotate(16deg); }
   /* Boxsack: hängt UNTER dem Gebäude – die Kette ist an dessen Decke (Unterseite, building.webp 1536×1024:
      Aufhängung bei Bildpunkt 1280/720, mitten in der Deckenfläche; Unterkante dort bei ~y 838) befestigt.
      Nullpunkt = Aufhängung. --u = Pixel pro Bildpixel der Boxsack-Quelle (1024×1536: Aufhängung 520/80, Ring 523/652).
      Pendeln per js/boxsack.js */
   .bag{ position:fixed; z-index:41; width:0; height:0; pointer-events:none; user-select:none;
     --u:calc(30.5vh / 1386);
-    left:calc(100vw - var(--bldW) * 256 / 1536 - 4px); top:calc(var(--bldW) * 720 / 1536);   /* 4px links der Aufhängung im Bild */
+    left:calc(100vw - var(--bldW) * 256 / 1536 - 24px); top:calc(var(--bldW) * 720 / 1536);   /* 24px links der Aufhängung im Bild */
     filter:drop-shadow(0 10px 22px rgba(0,0,0,.2)); }
   .bag img{ position:absolute; display:block; max-width:none; height:auto; will-change:transform; }
   /* Kette: Ausschnitt ab x499/y44 (51×608), Aufhängung darin bei 21/36 */
@@ -310,8 +345,8 @@
   /* Kontakt neben dem Würfel (js/heart.js setzt Lage + Deckkraft): E-Mail an mich + „other skills" (Ziel folgt) */
   .contact{ position:fixed; left:0; top:0; z-index:45; display:flex; flex-direction:column; align-items:flex-start; gap:12px;
     opacity:0; pointer-events:none; will-change:transform,opacity; }
-  .contact a{ font-family:'Animo',system-ui,sans-serif; color:var(--accent); text-decoration:none; letter-spacing:.14em;
-    text-transform:uppercase; cursor:none; text-underline-offset:.28em; }
+  .contact a{ font-family:var(--font); color:var(--accent); text-decoration:none; letter-spacing:.03em;
+    text-transform:lowercase; cursor:none; text-underline-offset:.28em; }
   .contact a:hover{ text-decoration:underline; }
   .contact__mail{ font-size:clamp(18px,1.9vw,30px); }
   .contact__skills{ font-size:clamp(12px,1vw,16px); opacity:.85; }
@@ -323,26 +358,32 @@
     transform:translate(-200px,-200px); will-change:transform; opacity:.96; }
   #cursor img{ width:100%; height:auto; display:block; filter:drop-shadow(0 2px 5px rgba(0,0,0,.35)); }
 
-  /* ---------- Vorhang-Intro (ehem. curtain.html): die Creme schiebt sich von rechts, dann von oben/unten bis an den
-     Grünkohl weg (clip-path) und legt DIESE Startseite frei; der Rest fliegt schräg raus. Liegt in .stage direkt unter
-     dem Cursor (z 9999). ---------- */
-  #curtain{ position:absolute; inset:0; z-index:9990; will-change:transform; }
-  #curtainGl{ position:absolute; inset:0; width:100%; height:100%; display:block; background:#C6B492; }   /* Senf = Glas-Foto der Startseite (75 % über --center) */
+  /* ---------- Vorhang-Intro (ehem. curtain.html): erst weicht das Weiß von rechts bis an den Grünkohl (clip-path), dann
+     schieben sich von oben und unten Balken herein, bis der ganze Vorhang (Weiß, Grünkohl, Titel, SCROLL-Rahmen) weg
+     ist und DIESE Startseite frei liegt. Liegt in .stage
+     direkt unter dem Cursor (z 9999). ---------- */
+  #curtain{ position:absolute; inset:0; z-index:9990; }
+  #curtainGl{ position:absolute; inset:0; background:#fff; }   /* Vorhang ganz weiß */
   #curtain .hero{ position:absolute; inset:0; display:grid; place-items:center; }
   #curtain .hero__wrap{ position:relative; width:min(1150px,94vw); }
-  #curtain .hero__kale{ width:100%; height:auto; display:block; filter:drop-shadow(0 18px 30px rgba(0,0,0,.18)); }
+  /* Grünkohl-Bild ist DECKEND (auf Weiß verrechnet, Schatten eingebacken) und hat 64 px Rand für den Schatten:
+     1278×709 = Kohl-Kasten 1150×581 + 2·64 -> per negativem Rand (Prozent = von der Breite) liegt der Kohl wie vorher */
+  #curtain .hero__kale{ width:calc(100% * 1278 / 1150); max-width:none; height:auto; display:block;
+    margin:calc(-100% * 64 / 1150);
+    filter:brightness(1.012); }   /* WebP (verlustbehaftet, YUV) macht aus Weiß 254 -> wieder 255 = nahtlos im weißen Vorhang */
+  /* SCROLL-Rahmen: Versalien in der Farbe des „re“, einmal rings um den Bildschirmrand (SVG-Textpfad, per JS gebaut) */
+  #curtain .scrollRing{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+  #curtain .scrollRing text{ font-family:'Turret Road', var(--font); font-weight:300; text-transform:none; fill:#BB4F4E; }
   #curtain .hero__title{ position:absolute; left:50%; top:46%; transform:translate(-50%, calc(-50% - 16px));
     display:flex; align-items:center; justify-content:center; gap:.04em; filter:drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
-  #curtain .type{ height:clamp(46px,10vw,116px); background-color:#F4F4E1;
-    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center;
-    -webkit-mask-size:contain; mask-size:contain; }
-  #curtain .type.sinc{ aspect-ratio:1986/760; -webkit-mask-image:url("assets/img/type-sinc.svg"); mask-image:url("assets/img/type-sinc.svg"); }
-  #curtain .type.moir{ aspect-ratio:1970/760; -webkit-mask-image:url("assets/img/type-moir.svg"); mask-image:url("assets/img/type-moir.svg"); }
+  /* Schriftzüge als echter Text (vorher SVG-Masken type-*.svg in der alten Schrift); Größe so, dass die x-Höhe der
+     alten Schriftzüge erhalten bleibt (SVG: x-Höhe 500/760 der Kastenhöhe, Nihanzo Grotesk x-Höhe 0.56 em) */
+  #curtain .word{ font-family:var(--font); font-weight:800; line-height:1; letter-spacing:-.01em;
+    color:#EFCE80; font-size:clamp(54px,11.75vw,136px); }                     /* sinc · moir = Senf 200 */
+  #curtain .word.video{ color:#BB4F4E; font-size:clamp(28px,5.87vw,68px); }   /* video = Farbe des „re“ (Mittelton re.png) */
   #curtain .re{ height:clamp(64px,14vw,168px); width:auto; display:block; margin:0 .01em; align-self:center; }
   #curtain .hero__subtitle{ position:absolute; left:50%; top:85%; transform:translate(-50%, 4px);
-    display:flex; align-items:center; justify-content:center; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
-  #curtain .type.video{ aspect-ratio:2279/760; height:clamp(24px,5vw,58px); background-color:#C65563;
-    -webkit-mask-image:url("assets/img/type-video.svg"); mask-image:url("assets/img/type-video.svg"); }
+    display:flex; align-items:center; justify-content:center; }   /* ohne Schatten */
 
   /* Scroll-Strecke: Kamera-Fahrt (~2.6) + Galerie (~13.0, inkl. Lauf-Sequenz) */
   .scroll-space{ position:relative; z-index:0; height:5860vh; }   /* = (CAM_VH + GAL_VH)·100vh */
@@ -382,7 +423,7 @@
     <!-- Läufer: Sprite-Sheet-Animation (aufstehen + rennen, folgt nach links) -->
     <div class="runner" id="runner"></div>
     <!-- Reifen: rollt nach dem Läufer die Schräglinie im Hintergrund hinunter -->
-    <img class="tire" id="tire" src="assets/img/reifen.webp" alt="" />
+    <div class="tire" id="tire"></div>
 
     <!-- Glas (3D) – Schluss-Szene, kommt aus dem Inneren des Kreises -->
     <div class="glass3d" id="glass3d"></div>
@@ -419,7 +460,7 @@
     <div class="slidebox" id="box1">
       <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
       <div class="sb-inner">
-        <img class="sb-img" src="assets/img/mini-me.png" alt="mini me" />
+        <img class="sb-img" src="assets/img/mini-me.webp" alt="mini me" />
         <div class="sb-cap">mini me</div>
       </div>
     </div>
@@ -441,20 +482,25 @@
 
     <!-- Vorhang-Intro: Creme (WebGL) wird weggeschoben + Grünkohl/Titel; wird danach entfernt -->
     <div id="curtain" aria-hidden="true">
-      <canvas id="curtainGl"></canvas>
+      <div id="curtainGl"></div>
       <div class="hero" id="cHero">
         <div class="hero__wrap">
-          <img class="hero__kale" src="assets/img/kale.png" alt="" />
+          <!-- Grünkohl = animiertes WebP (aus den gifski-Bildern von .claude/video/key4.py, q80, 24 fps): Bilder 0–53 hin und zurück – nur so weit, bis Blätter
+               aus dem Bild ragen würden; Form zeitlich stabil (Mehrheit über 5 Bilder), weiche Kante, deckend auf Weiß;
+               in 4 vom User markierten Bereichen (.claude/video/kale_regions.json) dunkle Stellen weiß, in 2 weiteren
+               (kale_fill.json) kleine weiße Lücken grün gefüllt, in kale_keep.json durchgehend grün -->
+          <img class="hero__kale" src="assets/img/kale.webp?v=1" width="1278" height="709" alt="" fetchpriority="high" />
           <div class="hero__title">
-            <span class="type sinc"></span><img class="re" src="assets/img/re.png" alt="" /><span class="type moir"></span>
+            <span class="word sinc">sinc.</span><img class="re" src="assets/img/re.webp" alt="" /><span class="word moir">moir</span>
           </div>
-          <div class="hero__subtitle"><span class="type video"></span></div>
+          <div class="hero__subtitle"><span class="word video">video</span></div>
         </div>
       </div>
+      <svg class="scrollRing" id="scrollRing"></svg>
     </div>
 
     <!-- alter Cursor -->
-    <div id="cursor"><img src="assets/img/cursor-jump.png" alt=""></div>
+    <div id="cursor"><img src="assets/img/cursor-jump.webp" alt=""></div>
 
     <!-- Ring zuletzt (Rand liegt vor der Mitte, Loch ist transparent) -->
     <!-- Loch-Geometrie (leer, nur zum Messen fürs JS) -->
@@ -475,9 +521,11 @@
     <img class="frame frame--left"   src="assets/img/frame-flowers.webp"  alt="" />
 
     <!-- Ecken -->
-    <img class="corner corner--marble"   src="assets/img/marble-tl.png" alt="Marmor" />
+    <img class="corner corner--marble"   src="assets/img/marble-tl.webp" alt="Marmor" />
     <img class="corner corner--statue"   src="assets/img/statue.webp"   alt="Statue" />
     <img class="corner corner--building" src="assets/img/building.webp" alt="Gebäude" />
+    <img class="corner corner--roses"    src="assets/img/roses-vase.webp" alt="Rosen in der Vase" />
+    <div class="clink" aria-hidden="true"><img src="assets/img/glass-clink.webp" alt="" /><img src="assets/img/glass-clink.webp" alt="" /></div>
 
     <!-- Boxsack: hängt neben dem Gebäude, pendelt nur, wenn die Maus drüberfährt (js/boxsack.js) -->
     <div class="bag" id="bag" aria-hidden="true">
@@ -515,10 +563,10 @@
 
 <script>
   /* ============ Vorhang-Intro (ehem. curtain.html) ============
-     Scrollen bewegt zuerst NUR den Vorhang (Seite bleibt oben): die Creme schiebt sich von rechts bis an den Grünkohl
-     weg, dann gleichzeitig von oben und unten; dabei liegt dahinter schon diese Startseite. Zuletzt fliegt der Rest
-     (Creme-Streifen + Grünkohl + Titel) schräg nach links oben raus.
-     Ist die Creme weg, wird der Vorhang entfernt und die Startseite übernimmt (Schreib-Animation startet).
+     Scrollen bewegt zuerst NUR den Vorhang (Seite bleibt oben): das Weiß weicht von rechts bis an den Grünkohl, dann
+     schieben sich von oben und unten Balken herein, bis sie sich in der Mitte treffen – der ganze Vorhang (Weiß, Grünkohl, Titel, SCROLL-Rahmen) ist dann weg; dahinter
+     liegt schon diese Startseite.
+     Ist der Vorhang weg, wird der Vorhang entfernt und die Startseite übernimmt (Schreib-Animation startet).
      Übersprungen bei ?at= / ?g= (Sprungmarken) und ?intro=0. */
   (function curtainIntro(){
     const el = document.getElementById('curtain');
@@ -526,9 +574,9 @@
     if(q.has('at') || q.has('g') || q.get('intro')==='0'){ el.remove(); window.__curtainOn = false; return; }
     window.__curtainOn = true; document.documentElement.classList.add('curtain-on');
     const cl = (v,a,b)=>Math.max(a,Math.min(b,v)), smooth = (t)=>t*t*(3-2*t);
-    const hero = document.getElementById('cHero'), cv = document.getElementById('curtainGl');
-    // Scroll-Weg für alle drei Phasen
-    const DIST = ()=>1.5*innerHeight;
+    const hero = document.getElementById('cHero');
+    // Scroll-Weg für beide Phasen
+    const DIST = ()=>1.4*innerHeight;
     let acc = 0, p = 0, done = false, ty = null;
     const push = (d)=>{ acc = cl(acc+d, 0, DIST()); };
     addEventListener('wheel', e=>{ if(done) return; e.preventDefault();
@@ -542,84 +590,53 @@
       else if(k==='End'){ e.preventDefault(); push(1e9); } else if(k==='Home'){ e.preventDefault(); push(-1e9); } });
     addEventListener('scroll', ()=>{ if(!done && scrollY!==0) scrollTo(0,0); });   // z. B. Scrollbalken ziehen
 
-    // ---- WebGL: Senf wie das Hintergrundbild der Startseite (Film-Look: Körnung, Vignette, Lichtfleck) – statisch ----
-    const gl = cv.getContext('webgl', { antialias:false, premultipliedAlpha:false, alpha:true });
-    if(gl){
-      const sh = (type, src)=>{ const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
-      const prog = gl.createProgram();
-      gl.attachShader(prog, sh(gl.VERTEX_SHADER, `attribute vec2 aPos; varying vec2 vUv;
-        void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos,0.0,1.0); }`));
-      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, `precision highp float; varying vec2 vUv; uniform vec2 uRes;
-        float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
-        float noise(vec2 p){ vec2 i=floor(p), f=fract(p);
-          float a=hash(i), b=hash(i+vec2(1.,0.)), c=hash(i+vec2(0.,1.)), d=hash(i+vec2(1.,1.));
-          vec2 u=f*f*(3.-2.*f); return mix(mix(a,b,u.x),mix(c,d,u.x),u.y); }
-        void main(){
-          vec2 uv = vUv;
-          float grain = noise(uv*uRes/2.4);
-          float vig = 1.0 - smoothstep(0.36, 1.12, length((uv-vec2(0.5,0.42))*vec2(1.1,1.0)));
-          vec3 cream = vec3(0.776,0.706,0.573);                    // #C6B492 = Senf-Ton des Glas-Fotos auf der Startseite
-          cream *= mix(0.90, 1.0, vig);
-          // sanfte, verwaschene Flecken, die ins Weiße gehen – mal größer, mal kleiner (Rand per Rauschen unruhig wie Aquarell)
-          vec2 asp = vec2(uRes.x/uRes.y, 1.0);
-          float spots = 0.0;
-          for(int i = 0; i < 18; i++){
-            float fi = float(i);
-            vec2 c = vec2(hash(vec2(fi, 1.37)), hash(vec2(fi, 7.11)));
-            float r = mix(0.05, 0.36, pow(hash(vec2(fi, 3.73)), 1.8));        // meist klein, einige groß
-            float a = mix(0.25, 0.70, hash(vec2(fi, 9.29)));
-            vec2 q = (uv - c)*asp;
-            float an = hash(vec2(fi, 5.51))*6.2832, cs = cos(an), sn = sin(an);
-            q = vec2(cs*q.x - sn*q.y, sn*q.x + cs*q.y);                       // zufällig gedreht …
-            q.x *= mix(0.55, 1.5, hash(vec2(fi, 2.21)));                       // … und gestreckt
-            q += (vec2(noise(uv*3.5 + fi*2.3), noise(uv*3.5 + fi*5.9 + 11.0)) - 0.5)*r*1.1;   // verzerrt (verwaschen)
-            float d = length(q) + (noise(uv*11.0 - fi*1.7) - 0.5)*r*0.45;
-            float k = smoothstep(r, 0.0, d);                                   // weich, ohne hellen Kern
-            spots = 1.0 - (1.0 - spots)*(1.0 - k*a);
-          }
-          cream = mix(cream, vec3(1.0), spots*0.8);
-          cream = mix(cream, cream*0.93, grain*0.35);
-          cream += smoothstep(0.75,0.0, length(uv-vec2(0.34,0.72)))*0.045;
-          gl_FragColor = vec4(cream, 1.0);
-        }`));
-      gl.linkProgram(prog); gl.useProgram(prog);
-      const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-      const aPos = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-      const uRes = gl.getUniformLocation(prog,'uRes');
-      const paint = ()=>{ const dpr = Math.min(devicePixelRatio||1, 2);
-        cv.width = Math.round(innerWidth*dpr); cv.height = Math.round(innerHeight*dpr); gl.viewport(0,0,cv.width,cv.height);
-        gl.uniform2f(uRes, cv.width, cv.height); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        cv.style.background = 'transparent'; };                         // CSS-Senf nur bis zum 1. Bild
-      addEventListener('resize', paint); paint();
+    // Vorhang-Fläche = weißer CSS-Hintergrund von #curtainGl (früherer Senf-Shader: .claude/archiv/curtain-senf-shader.js)
+
+    // SCROLL-Rahmen: je Bildschirmseite eine Zeile aus ganzen Wörtern ohne Abstand dazwischen (keine zerschnittenen
+    // Wörter an den Ecken), im Uhrzeigersinn -> Buchstaben stehen nach außen. Oben/unten volle Breite, links/rechts
+    // schließen direkt an (Ecken-Abstand = Buchstabenabstand). Den Rest füllt ein gleichmäßiger Buchstabenabstand,
+    // sodass jede Zeile exakt an der Ecke endet.
+    const ring = document.getElementById('scrollRing'), NS = 'http://www.w3.org/2000/svg', WORD = 'SCROLL';
+    function layoutRing(){
+      const W = innerWidth, H = innerHeight, fs = cl(Math.min(W, H*1.6)*0.017, 12, 28);
+      const g = 0.45*fs, m = g + 0.70*fs, t = 0.14*fs;   // Abstand zum Rand, Grundlinie (+ Versalhöhe), Ecken-Abstand
+      const edges = [[g, m, W-g, m], [W-m, m+t, W-m, H-m-t], [W-g, H-m, g, H-m], [m, H-m-t, m, m+t]];
+      ring.textContent = '';
+      edges.forEach(([x0, y0, x1, y1], k)=>{
+        const path = document.createElementNS(NS, 'path'), text = document.createElementNS(NS, 'text'),
+              tp = document.createElementNS(NS, 'textPath');
+        path.id = 'scrollEdge' + k; path.setAttribute('fill', 'none'); path.setAttribute('d', `M ${x0} ${y0} L ${x1} ${y1}`);
+        text.style.fontSize = fs + 'px'; tp.setAttribute('href', '#' + path.id);
+        text.appendChild(tp); ring.append(path, text);
+        tp.textContent = WORD; const w = tp.getComputedTextLength() || 3.9*fs;
+        const L = Math.hypot(x1-x0, y1-y0), n = Math.max(1, Math.floor(L/w));
+        tp.textContent = WORD.repeat(n);
+        text.style.letterSpacing = ((L - n*w)/(n*WORD.length - 1)).toFixed(3) + 'px';   // letzter Buchstabe endet an der Ecke
+      });
     }
+    layoutRing(); addEventListener('resize', ()=>{ if(!done) layoutRing(); });
+    document.fonts && document.fonts.load('300 20px "Turret Road"').then(()=>{ if(!done) layoutRing(); }, ()=>{});   // Breite erst mit der echten Schrift
 
-    // Grünkohl-Kasten in Bühnen-Koordinaten (offset* ignoriert Transforms -> auch während des Rausfliegens stabil)
-    const wrap = hero.querySelector('.hero__wrap'), kale = hero.querySelector('.hero__kale');
-    const kaleBox = ()=>{ const l = wrap.offsetLeft, t = wrap.offsetTop;
-      return { l, t, r:l + kale.offsetWidth, b:t + kale.offsetHeight }; };
-    const A_END = 0.32, B_END = 0.58;   // 1) rechts -> Grünkohl  2) oben + unten -> Grünkohl  3) Rest fliegt schräg nach links raus
-
+    const wrap = hero.querySelector('.hero__wrap'), A_END = 0.38;   // 1) rechts -> Grünkohl  2) oben + unten -> ganz weg
     function finish(){
       done = true; window.__curtainOn = false; el.remove(); document.documentElement.classList.remove('curtain-on');
-      try{ gl && gl.getExtension('WEBGL_lose_context') && gl.getExtension('WEBGL_lose_context').loseContext(); }catch(_){}
       if(typeof begin === 'function') begin();                         // Schreib-Animation (+ Ton) der Startseite
     }
     function frame(now){
       if(done) return;
       const target = acc/DIST();
       p += (target-p)*0.075; if(Math.abs(target-p) < 1e-4) p = target;
-      const K = kaleBox(), W = innerWidth, H = innerHeight;
-      const a = smooth(cl(p/A_END, 0, 1)), b = smooth(cl((p-A_END)/(B_END-A_END), 0, 1));
-      document.documentElement.classList.toggle('curtain-on', a <= 0.001);   // Fortschrittsbalken, sobald die Creme nach links weicht
-      // Creme wird weggeschoben (Kanten wandern bis an den Grünkohl) -> dahinter liegt schon die Startseite
-      cv.style.clipPath = (a || b) ? `inset(${(b*Math.max(0,K.t)).toFixed(1)}px ${(a*Math.max(0,W-K.r)).toFixed(1)}px ${(b*Math.max(0,H-K.b)).toFixed(1)}px 0px)` : '';
-      const h = smooth(cl((p-B_END)/(1-B_END), 0, 1));                   // Rest (Creme-Streifen + Grünkohl + Titel) raus
-      el.style.transform = h ? `translate(${(-125*h).toFixed(3)}%, ${(-55*h).toFixed(3)}%) rotate(${(-42*h).toFixed(3)}deg)` : '';
+      const a = smooth(cl(p/A_END, 0, 1)), b = smooth(cl((p-A_END)/(1-A_END), 0, 1)), half = innerHeight/2;
+      document.documentElement.classList.toggle('curtain-on', a <= 0.001);   // Fortschrittsbalken, sobald das Weiß weicht
+      // 1) der ganze Vorhang weicht von rechts bis an die rechte Kante des Grünkohls (= Kohl-Kasten, ohne den weißen
+      //    Schatten-Rand des GIFs)  2) Balken von oben und unten (= freigelegte Startseite) treffen sich in der Mitte
+      const r = a*Math.max(0, innerWidth - wrap.getBoundingClientRect().right), tb = b*half;
+      el.style.clipPath = (a || b) ? `inset(${tb.toFixed(1)}px ${r.toFixed(1)}px ${tb.toFixed(1)}px 0px)` : '';
       if(target >= 1 && p >= 0.995) finish(); else requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
   })();
+
 </script>
 
 <script>
@@ -641,6 +658,7 @@
         let d = ((t-angle+540)%360)-180; angle += d*0.18;
       }
       cursor.style.transform = `translate(${mx}px,${my}px) translate(-54.3%,-1.8%) rotate(${angle}deg)`;
+      window.__cursor = { x:mx, y:my, a:angle };                       // Lage der Figur (für das Ausweichen der Herzpunkte)
       requestAnimationFrame(frame);
     })();
   })();
@@ -842,10 +860,11 @@
     const runner      = document.getElementById('runner');
     const tire        = document.getElementById('tire'), bgPic=document.getElementById('bgPic'), bgWhite=document.getElementById('bgWhite');
     // Umriss (konvexe Hülle) des Reifens in Anteilen der Bildgröße um die Mitte – damit er an der Kurve anliegt
-    const TIRE_HULL=[-.496,-.013,-.481,-.094,-.448,-.188,-.404,-.269,-.355,-.334,-.27,-.412,-.196,-.456,-.107,-.487,.049,-.497,
-      .16,-.484,.242,-.463,.316,-.425,.376,-.378,.42,-.325,.461,-.25,.487,-.162,.498,-.062,.494,.012,.48,.097,.442,.203,.402,.278,
-      .346,.35,.287,.406,.209,.456,.123,.488,.001,.497,-.103,.475,-.181,.447,-.255,.416,-.333,.372,-.396,.319,-.452,.241,-.485,.153,
-      -.496,.091];
+    const TIRE_HULL=[-.498,.019,-.482,-.052,-.463,-.122,-.435,-.191,-.397,-.255,-.353,-.317,-.299,-.372,-.237,-.422,-.164,-.459,
+      -.086,-.486,-.003,-.499,.082,-.495,.165,-.48,.246,-.457,.317,-.418,.378,-.368,.425,-.308,.458,-.242,.48,-.172,.496,-.101,
+      .498,-.029,.487,.042,.468,.113,.444,.182,.41,.248,.368,.311,.316,.368,.256,.419,.185,.458,.106,.485,.023,.499,-.06,.487,
+      -.139,.461,-.215,.429,-.289,.393,-.356,.349,-.411,.294,-.452,.23,-.479,.162,-.496,.091];
+    const TIRE_N=49, TIRE_COLS=7;                    // Roll-Bildfolge (reifen-roll.webp)
     // Bahn = INNENkante der rechten Kante der linken Ellipse in bg-glas.webp (= Rand der weißen Fläche, Bildpixel 1672×941,
     // gemessen); unten (ab y 800) die Oberkante der dicken Linie, die flacher nach links weiterläuft. Oben und unten entlang
     // der Tangente verlängert (dort verdecken Häuser bzw. Blumen den Reifen)
@@ -876,7 +895,7 @@
         let tx=q[0]-p[0], ty=q[1]-p[1]; const L=Math.hypot(tx,ty)||1; tx/=L; ty/=L;
         const nx=-ty, ny=tx; let d=0;
         for(let j=0;j<TIRE_HULL.length;j+=2) d=Math.max(d, -(TIRE_HULL[j]*w*nx + TIRE_HULL[j+1]*h*ny));
-        d-=1;                                                                          // 1 px in die Linie hinein (liegt satt auf)
+        d-=3;                                                                          // 3 px in die Linie hinein (liegt satt auf)
         if(i) sAcc+=Math.hypot(C[i][0]-C[i-1][0], C[i][1]-C[i-1][1]);
         M.push({x:C[i][0]+d*nx, y:C[i][1]+d*ny, s:sAcc}); }
       // sichtbarer Abschnitt: ab dem Hervorkommen unter den Bergen bis hinter Bronze (unten) bzw. Blumen (links)
@@ -1183,6 +1202,8 @@
         const T=tireGeom(), M=T.M, sT=T.s0+(T.s1-T.s0)*tireU(tr);
         let i=1; while(i<M.length-1 && M[i].s<sT) i++;
         const a=M[i-1], b=M[i], f=cl((sT-a.s)/Math.max(1e-6,b.s-a.s),0,1);
+        const fi=Math.round(tireU(tr)*(TIRE_N-1)), fc=fi%TIRE_COLS, fr=(fi-fc)/TIRE_COLS;   // Video-Bild = Weganteil
+        tire.style.backgroundPosition=`${(fc*100/(TIRE_COLS-1)).toFixed(3)}% ${(fr*100/(Math.ceil(TIRE_N/TIRE_COLS)-1)).toFixed(3)}%`;
         tire.style.visibility='visible';
         tire.style.transform=`translate(${(a.x+(b.x-a.x)*f-T.w/2).toFixed(1)}px,${(a.y+(b.y-a.y)*f-T.h/2).toFixed(1)}px)`;
       }

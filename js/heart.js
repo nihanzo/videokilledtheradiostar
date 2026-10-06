@@ -162,11 +162,12 @@ const glassR = new THREE.ShaderMaterial({              // Pass 2: Spiegelung (ü
     float F = abs(n.z) > 0.5 ? 0.0 : clamp(fresnelD(-dot(rd, n), uIor)*uRefl, 0.0, 1.0)*uAppear;   // Vorder-/Rückseite spiegeln nicht
     vec3 e = envMap(normalize(mat3(uModel)*reflect(rd, n)), 1.0);
     if(n.y > 0.5 && uTopX.w > 0.5){
-      // Oberseite: x = Bildschirm-x -> genau die Häuser darüber; Tiefe wie ein Spiegel: hintere Kante = tiefste
-      // Turmspitzen (Bildunterkante), vordere Kante = Häuser am oberen Bildschirmrand (flipY: v = 1 - Bildzeile)
-      float vImg = mix(uTopX.z, 1.0, 0.5 - 0.5*vL.z/uHalf.z);
-      vec4 h = texture2D(uTop, vec2((gl_FragCoord.x - uTopX.x)/uTopX.y, 1.0 - vImg));
-      e = mix(e, h.rgb, h.a);
+      // Oberseite spiegelt die Häuser darüber so weich wie links die Blumen: x = Bildschirm-x -> genau die Häuser
+      // darüber; Tiefe: vordere Kante = Häuser am oberen Bildschirmrand, hintere Kante = Ende des deckenden Häuserbands
+      // (Bildzeile 0.6, darunter nur noch Turmspitzen); unscharf über Mipmap (vormultipliziert -> kein dunkler Rand)
+      float vImg = mix(uTopX.z, 0.6, 0.5 - 0.5*vL.z/uHalf.z);
+      vec4 h = textureLod(uTop, vec2((gl_FragCoord.x - uTopX.x)/uTopX.y, 1.0 - vImg), 2.5);
+      e = e*(1.0 - h.a) + h.rgb;
     }
     vec4 o = linearToOutputTexel(vec4(e, 1.0));
     gl_FragColor = vec4(o.rgb*F, F);
@@ -182,8 +183,18 @@ const cubeT = new THREE.Mesh(boxGeo, glassT); cubeT.renderOrder = 1; cubeG.add(c
 const cubeR = new THREE.Mesh(boxGeo, glassR); cubeR.renderOrder = 3; cubeG.add(cubeR);
 
 // ---------- Herz: schwarze Zeichnung vorn (gewölbt) + runde, gleichmäßige Rückseite ----------
-const SIDE_H = 0.8, STEP = 2;
-const uni = { uTime:{value:0}, uForm:{value:0}, uPx:{value:800}, uDot:{value:0.004} };
+// Version 2 (Standard seit 2026-10-06; alte Version mit ?herz=1): ohne Rückseite, vorne ~40 % mehr Punkte, schweben ganz leicht umher und weichen der
+// Cursor-Figur aus: genau entlang ihres Umrisses (Abstandskarte cursor-sdf.png, Lücke zwischen den Beinen geschlossen),
+// ab dem Kopf; hinter den Füßen zieht eine weiße Spur nach, die sich dann langsam schließt
+const HEART_V2 = new URLSearchParams(location.search).get('herz') !== '1';
+const SIDE_H = 0.8, STEP = HEART_V2 ? 1.7 : 2, CUR_N = 24, CUR_HOLD = 0.35, CUR_CLOSE = 1.1;   // Spur bleibt 0.35 s weiß, zu nach 1.1 s
+// Cursor-Figur (#cursor: 34 px breit, Drehpunkt = Kopf bei 54.3 % / 1.8 %); Abstandskarte deckt die Figur + 16.105 px Rand
+const CUR_W = 34, CUR_H = 34*600/267, CUR_PAD = 16.105, CUR_TEX = [259, 426];
+const uni = { uTime:{value:0}, uForm:{value:0}, uPx:{value:800}, uDot:{value:0.004}, uFloat:{value:0.0009}, uMaxPt:{value:10},
+  uRes:{value:new THREE.Vector2(1, 1)}, uK:{value:1}, uPushOn:{value:0}, uSdf:{value:null},
+  uCur:{value:Array.from({length:CUR_N}, ()=>new THREE.Vector4())},
+  uCurBox:{value:new THREE.Vector4(CUR_W, CUR_H, CUR_PAD, 4)},                // Breite, Höhe, Rand, Abstand zum Umriss (px)
+  uCurO:{value:new THREE.Vector2(0.543*CUR_W, 0.018*CUR_H)} };
 async function buildHeart(){
   const { W, H, px } = await loadPx('assets/img/heart-ink.png'), S = SIDE_H/H;
   const pos = [], start = [], rn = [], ink = [];
@@ -198,7 +209,7 @@ async function buildHeart(){
     const i = (jy*W + jx)*4, k = px[i]/255; if(k < 0.08 || rnd() > Math.pow(k, 0.85)) continue;
     add((jx - W/2)*S, -(jy - H/2)*S, 0.12*SIDE_H*prof(px[i+1]/255) + (rnd()-0.5)*0.006, 1, 0.62 + 0.5*Math.sqrt(k));   // Vorderseite
   }
-  for(let y = 0; y < H; y += STEP*2) for(let x = 0; x < W; x += STEP*2){   // Rückseite: gleichmäßig, rund
+  if(!HEART_V2) for(let y = 0; y < H; y += STEP*2) for(let x = 0; x < W; x += STEP*2){   // Rückseite: gleichmäßig, rund
     const jx = Math.min(W-1, Math.max(0, Math.round(x + (rnd()-0.5)*STEP*1.8)));
     const jy = Math.min(H-1, Math.max(0, Math.round(y + (rnd()-0.5)*STEP*1.8)));
     const i = (jy*W + jx)*4; if(px[i+2] < 128 || rnd() > 0.75) continue;
@@ -209,22 +220,47 @@ async function buildHeart(){
   geo.setAttribute('aStart',   new THREE.Float32BufferAttribute(start, 3));
   geo.setAttribute('aRnd',     new THREE.Float32BufferAttribute(rn, 4));
   geo.setAttribute('aInk',     new THREE.Float32BufferAttribute(ink, 1));
-  uni.uDot.value = STEP*S*0.82;
+  uni.uDot.value = 2*S*0.82;                                           // Größe am alten Raster (2 px) gemessen
+  if(HEART_V2){
+    uni.uFloat.value = 2*S*0.5;                                        // Schweben ≈ halber Punktabstand
+    const t = new THREE.TextureLoader().load('assets/img/cursor-sdf.png', ()=>{ uni.uPushOn.value = 1; });
+    t.flipY = false; t.generateMipmaps = false; t.minFilter = t.magFilter = THREE.LinearFilter; uni.uSdf.value = t;
+  }
   // EINMAL gezeichnet, nach dem Durchsicht-Pass und vor der Spiegelung (nicht gebrochen -> nicht doppelt)
   const pts = new THREE.Points(geo, new THREE.ShaderMaterial({ uniforms:uni, transparent:true, depthWrite:false,
     vertexShader:`
       attribute vec3 aStart; attribute vec4 aRnd; attribute float aInk;
-      uniform float uTime, uForm, uPx, uDot;
+      uniform float uTime, uForm, uPx, uDot, uFloat, uMaxPt, uK, uPushOn;
+      uniform vec2 uRes, uCurO; uniform vec4 uCur[${CUR_N}], uCurBox; uniform sampler2D uSdf;
       varying float vInk;
+      float sdf(vec2 uv){ return (texture2D(uSdf, uv).r*255.0 - 128.0)/8.0; }   // Abstand zum Figur-Umriss (px, innen < 0)
       void main(){
         float k = clamp((uForm - aRnd.z*0.5)/0.5, 0.0, 1.0); k = k*k*(3.0-2.0*k);
         vec3 p = mix(aStart, position, k);
         float t = uTime*aRnd.y;                                       // im Ziel nur noch ganz leichtes Schweben
-        p += vec3(sin(t+aRnd.x), cos(t*0.83+aRnd.x*1.7), sin(t*0.61+aRnd.x*2.3)) * mix(0.03, 0.0009, k);
+        p += vec3(sin(t+aRnd.x), cos(t*0.83+aRnd.x*1.7), sin(t*0.61+aRnd.x*2.3)) * mix(0.03, uFloat, k);
         vec4 mv = modelViewMatrix*vec4(p, 1.0);
         float sz = uDot*aRnd.w*k*uPx / -mv.z;                          // Punkte wachsen beim Zusammensetzen aus dem Nichts
-        gl_PointSize = clamp(sz, 1.0, 10.0);
-        gl_Position = sz < 0.3 ? vec4(2.0, 2.0, 2.0, 1.0) : projectionMatrix*mv;
+        gl_PointSize = clamp(sz, 1.0, uMaxPt);
+        vec4 cp = projectionMatrix*mv;
+        if(uPushOn > 0.5){                                            // Cursor-Figur: Punkte in ihr wandern an ihren Umriss
+          vec2 sp = (cp.xy/cp.w*0.5 + 0.5)*uRes, css = vec2(sp.x, uRes.y - sp.y)/uK, best = vec2(0.0);
+          vec2 span = vec2(uCurBox.x, uCurBox.y) + 2.0*uCurBox.z, tx = 1.0/vec2(${CUR_TEX[0]}.0, ${CUR_TEX[1]}.0);
+          float bl = 0.0;
+          for(int i = 0; i < ${CUR_N}; i++){
+            vec4 c = uCur[i]; if(c.w <= 0.0) continue;                // xy = Kopf (CSS-px), z = Drehung, w = Gewicht
+            float ca = cos(c.z), sa = sin(c.z); vec2 q = css - c.xy;
+            vec2 uv = (uCurO + vec2(ca*q.x + sa*q.y, -sa*q.x + ca*q.y) + uCurBox.z)/span;   // in Figur-Koordinaten
+            if(uv.x < tx.x || uv.y < tx.y || uv.x > 1.0 - tx.x || uv.y > 1.0 - tx.y) continue;
+            float amt = uCurBox.w - sdf(uv); if(amt <= 0.0) continue;
+            vec2 g = vec2(sdf(uv + vec2(tx.x, 0.0)) - sdf(uv - vec2(tx.x, 0.0)), sdf(uv + vec2(0.0, tx.y)) - sdf(uv - vec2(0.0, tx.y)));
+            g /= max(length(g), 1e-4);                                // nach außen (Figur-Koordinaten, y nach unten)
+            vec2 dsp = vec2(ca*g.x - sa*g.y, sa*g.x + ca*g.y)*amt*c.w;  // zurück in Bildschirm-Richtung
+            if(length(dsp) > bl){ bl = length(dsp); best = dsp; }
+          }
+          cp.xy += vec2(best.x, -best.y)*uK/uRes*2.0*cp.w;
+        }
+        gl_Position = sz < 0.3 ? vec4(2.0, 2.0, 2.0, 1.0) : cp;
         vInk = aInk;
       }`,
     fragmentShader:`
@@ -429,7 +465,7 @@ async function buildEnv(){
   const env = new THREE.CubeTexture([ face(ims[1]), face(ims[0], [840, 0, 696, 850]), face(ims[2], [520, 0, 1000, 220]),
     face(ims[3], [1400, 60, 1000, 343]), face(ims[1]), front ]);                            // Häuser/Bronze: nur deckender Teil
   env.colorSpace = THREE.SRGBColorSpace; env.minFilter = THREE.LinearMipmapLinearFilter; env.needsUpdate = true;
-  const top = texOf(ims[2]); top.anisotropy = renderer.capabilities.getMaxAnisotropy();   // stark gestaucht -> anisotrop filtern
+  const top = texOf(ims[2]); top.premultiplyAlpha = true;                                 // weich gefiltert ohne dunkle Ränder
   glassUni.uTop.value = top;
   return env;
 }
@@ -452,6 +488,7 @@ function layout(){
   const b = new THREE.Vector2(); renderer.getDrawingBufferSize(b);
   uni.uPx.value = b.y / (2*Math.tan(camera.fov*DEG/2));              // Welt-Punktgröße -> Pixel
   glassUni.uRes.value.copy(b); bgRT.setSize(Math.ceil(b.x/2), Math.ceil(b.y/2));
+  uni.uRes.value.copy(b); uni.uK.value = b.x/w;                      // CSS-px -> Puffer-px
   fitBackdrop(); topLayout();
 }
 // Lage des Häuser-Bilds (.frame--top der Seite) für die Spiegelung der Würfel-Oberseite
@@ -466,6 +503,24 @@ addEventListener('resize', layout);
 let mx = 0, my = 0, emx = 0, emy = 0, mpx = -1, mpy = -1;
 const hov = new THREE.Vector2(), hovT = new THREE.Vector2();                      // Kippen beim Drüberfahren (aktuell/Ziel)
 addEventListener('mousemove', e=>{ mx = e.clientX/innerWidth*2 - 1; my = e.clientY/innerHeight*2 - 1; mpx = e.clientX; mpy = e.clientY; });
+// Lage der Cursor-Figur für das Ausweichen der Herzpunkte (nur Version 2): aktuelle Lage (Kopf + Drehung, von der
+// Startseite als window.__cursor) und die der letzten CUR_CLOSE s: die ersten CUR_HOLD s voll (weiße Spur), dann
+// abklingend. Neue Lage alle 16 px – die Figur liegt in Laufrichtung (76 px lang), die Spur bleibt also geschlossen
+const curHist = [];
+function updateTrail(now){
+  if(!HEART_V2) return;
+  const c = window.__cursor, C = uni.uCur.value; let i = 0;
+  if(c){
+    const a = c.a*DEG, L = curHist[0];
+    if(!L || Math.hypot(c.x - L.x, c.y - L.y) > 16 || Math.abs(a - L.a) > 0.12){
+      curHist.unshift({ x:c.x, y:c.y, a, t:now }); if(curHist.length > CUR_N) curHist.pop();
+    }
+    C[i++].set(c.x, c.y, a, 1);
+    for(let k = 1; k < curHist.length && i < CUR_N; k++){ const h = curHist[k], age = now - h.t;
+      if(age < CUR_CLOSE) C[i++].set(h.x, h.y, h.a, age < CUR_HOLD ? 1 : Math.pow(1 - (age - CUR_HOLD)/(CUR_CLOSE - CUR_HOLD), 1.5)); }
+  }
+  while(i < CUR_N) C[i++].set(0, 0, 0, 0);
+}
 // sanfter Herzschlag: zwei weiche Wellen, Periode 1.6 s
 const beat = (s)=>{ const x = (s % 1.6)/1.6; return Math.exp(-Math.pow((x-0.12)/0.09,2)) + 0.5*Math.exp(-Math.pow((x-0.38)/0.1,2)); };
 const rideEase = (x)=>0.7*smooth(x) + 0.3*x;                         // ein Rutsch: weich an/aus
@@ -510,7 +565,7 @@ function hideScene(){
   // Würfel erscheint unterwegs, das Herz setzt sich zusammen; beide schweben leicht, der Würfel dreht sich ins Bild
   const ap = smooth(cl((tS - lead - RIDE.length*0.025)/0.05, 0, 1));  // Würfel erscheint als letztes (ganz hinten)
   glassUni.uAppear.value = ap; cubeG.visible = ap > 0.002;
-  uni.uTime.value = sec; uni.uForm.value = smooth(cl((f - 0.3)/0.6, 0, 1));
+  uni.uTime.value = sec; uni.uForm.value = smooth(cl((f - 0.3)/0.6, 0, 1)); updateTrail(performance.now()/1000);
   heartG.scale.setScalar(1 + 0.014*beat(sec));
   floatG.position.y = Math.sin(sec*0.9)*0.03;                           // schwebt leicht
   // Maus über dem Würfel: er kippt deutlich zur Maus hin (Herz mit), sonst ruhig

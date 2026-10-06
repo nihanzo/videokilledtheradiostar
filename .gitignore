@@ -7,3 +7,10 @@
 
 # Rohmaterial (Staging) — wird NICHT veröffentlicht
 assets/raw/
+
+# Zwischenbilder der Grünkohl-/Video-Skripte (neu erzeugbar)
+.claude/video/kall/
+.claude/video/kgif/
+.claude/video/kout/
+.claude/video/ccfilter
+.claude/video/*.raw

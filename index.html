@@ -3,26 +3,31 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Schrift: eigene „Nihanzo Grotesk“ (assets/fonts/nihanzo, nach dem Stil des Musterbilds gezeichnet: sehr fett,
+     weiche Ecken, enge Laufweite; nur Kleinbuchstaben, Ziffern und Satzzeichen – Großbuchstaben zeigen die Kleinbuchstaben) -->
+<link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
+<link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
 <title>nihanzo</title>
 <!--
   LADESEITE – weißer Hintergrund
-   1. Gans aus Kreuzen (assets/img/goose-crosses.webp) gleitet von unten rechts diagonal nach oben links raus
+   1. Gans aus Kreuzen (assets/img/goose-body.webp + goose-wing-far/-near.webp, leichter Flügelschlag) gleitet von unten rechts diagonal nach oben links raus
       (leicht in Flugrichtung gedreht, GOOSE_ROT). Hinter ihr: Kirchkreuze als Schleier -> Fluglinie bis in die Ecke.
    2. Die Skulptur (assets/img/madonna.webp) erscheint SCHRÄG DIREKT HINTER der Gans Stück für Stück
       (diagonale Maske, deren Kante dem Schwanz der Gans folgt). Die Kreuzlinie ist im Bereich des Bildes unterbrochen.
    3. Danach schießt eine Linie aus dem Auge der Mutter schräg nach oben rechts und schreibt schnell
-      „believe the story" (#B5C188); dann zieht sich die Linie zurück.
+      „believe the story" (#6F798F, Nihanzo Grotesk); dann zieht sich die Linie zurück.
    4. Silberne Powerbank (reines CSS nach Produktfoto, hochkant) rechts unter dem Text lädt 0 -> 100 %;
       bei 100 % erscheinen direkt an der Unterkante der Figur die Sound-Buttons (gleiche Breite wie die Bronze-Kante).
    5. Schwarzes USB-C-Kabel (SVG): hängt von der Powerbank rechts an der Figur vorbei herunter und steckt mit dem
       USB-C-Stecker seitlich im rechten Button („enter without sound").
 -->
 <style>
-  @font-face{ font-family:'Animo'; src:url('assets/fonts/animo/Animo.otf') format('opentype'); font-display:swap; }
-  :root{ --olive:#798816; --say:#B5C188; }
+  @font-face{ font-family:'Nihanzo Grotesk'; src:url('assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4') format('truetype');
+    font-weight:100 900; font-display:swap; }   /* eine Stärke für alle Gewichte -> kein künstliches Fettmachen */
+  :root{ --olive:#798816; --say:#6F798F; --font:'Nihanzo Grotesk',system-ui,sans-serif; }   /* --say = Farbe aller Schrift */
   *{ margin:0; padding:0; box-sizing:border-box; }
   html,body{ height:100%; }
-  body{ background:#fff; overflow:hidden; font-family:'Animo',Georgia,serif; }
+  body{ background:#fff; overflow:hidden; font-family:var(--font); font-weight:800; text-transform:lowercase; }   /* alles klein */
 
   #trail{ position:fixed; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; }
 
@@ -44,14 +49,23 @@
   .plug{ opacity:0; }                                      /* Deckkraft setzt das JS synchron zum Zeichnen des Kabels */
 
   /* Gans */
-  #goose{ position:fixed; left:0; top:0; z-index:6; pointer-events:none; will-change:transform; display:block; }
+  #goose{ position:fixed; left:0; top:0; z-index:6; pointer-events:none; will-change:transform; display:block; aspect-ratio:1200/815; }
+  #goose img{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  /* Flügelschlag: jeder Flügel wird senkrecht zu seiner Ansatzlinie gestaucht (rotate·scaleY·rotate zurück) –
+     die Ansatzlinie selbst bleibt stehen, daher kein Riss zum Körper. Ursprung = Punkt auf der Linie (Bildpx/1200×815) */
+  #goose .wing-near{ transform-origin:52.667% 60.982%; animation:flapNear 1.1s ease-in-out infinite; }   /* Linie (632,497)->(905,600) */
+  #goose .wing-far{ transform-origin:24.167% 46.012%; animation:flapFar 1.1s ease-in-out infinite; }     /* Linie (290,375)->(455,352) */
+  @keyframes flapNear{ 0%,100%{ transform:rotate(20.67deg) scaleY(1.02) rotate(-20.67deg); }
+                       50%{ transform:rotate(20.67deg) scaleY(.88) rotate(-20.67deg); } }
+  @keyframes flapFar{ 0%,100%{ transform:rotate(-7.94deg) scaleY(1.02) rotate(7.94deg); }
+                      50%{ transform:rotate(-7.94deg) scaleY(.88) rotate(7.94deg); } }
 
   /* Sound-Buttons: direkt an der Unterkante der Figur, so breit wie die Bronze-Kante; Farbe/Hover wie die Kreuze */
   .enter{ position:fixed; z-index:7; display:flex; opacity:0; visibility:hidden; transform:translateY(6px);
     transition:opacity .5s ease, transform .5s ease, visibility 0s linear .5s; }
   .enter.show{ opacity:1; visibility:visible; transform:none; transition:opacity .5s ease, transform .5s ease; }
-  .enter button{ flex:1 1 50%; min-width:0; font-family:'Animo',Georgia,serif; font-size:inherit; letter-spacing:.03em;
-    text-transform:lowercase; white-space:nowrap; color:var(--olive); background:#fff; border:2.3px solid var(--olive);
+  .enter button{ flex:1 1 50%; min-width:0; font-family:var(--font); font-weight:inherit; font-size:inherit; letter-spacing:.03em;
+    text-transform:lowercase; white-space:nowrap; color:var(--say); background:#fff; border:2.3px solid var(--olive);
     padding:8px 8px; cursor:pointer; transition:background .25s ease, color .25s ease;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; line-height:1.1; }
   .enter button + button{ border-left:0; }                       /* kein Platz dazwischen, keine doppelte Linie */
@@ -76,7 +90,7 @@
     background:radial-gradient(circle at 35% 30%,#2a2a2e 0%,#060607 55%);
     box-shadow:0 0 0 1.5px #8f949a, 0 0 0 2.5px #e9ebed, inset 0 1px 1px rgba(255,255,255,.12);
     display:flex; align-items:center; justify-content:center;
-    font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:#f4f4f4; letter-spacing:-.4px;
+    font:800 12px/1 var(--font); color:#fff; letter-spacing:-.4px;   /* Prozentanzeige weiß */
     font-variant-numeric:tabular-nums; text-shadow:0 0 3px rgba(255,255,255,.45); }
   .pb__disp::before{ content:''; position:absolute; left:4.5px; top:50%; width:3px; height:3px; margin-top:-1.5px;
     border-radius:50%; background:#3ddc6a; box-shadow:0 0 4px #3ddc6a; }
@@ -107,10 +121,14 @@
       <rect x="0" y="-4.25" width="16" height="8.5" rx="2.4" fill="#141416"/></g></g>
   </svg>
   <svg id="beam" aria-hidden="true"><line id="beamL" x1="0" y1="0" x2="0" y2="0"
-    stroke="#B5C188" stroke-width="1.4" stroke-linecap="round" visibility="hidden" /></svg>
+    stroke="#6F798F" stroke-width="1.4" stroke-linecap="round" visibility="hidden" /></svg>
   <div class="say" id="say"><span id="w1">believe</span> the story</div>
 
-  <img id="goose" src="assets/img/goose-crosses.webp" alt="Gans aus Kreuzen mit Kind auf dem Rücken" />
+  <div id="goose" role="img" aria-label="Gans aus Kreuzen mit Kind auf dem Rücken">
+    <img class="wing-far" src="assets/img/goose-wing-far.webp" alt="" />
+    <img src="assets/img/goose-body.webp" alt="" />
+    <img class="wing-near" src="assets/img/goose-wing-near.webp" alt="" />
+  </div>
 
   <div class="enter" id="enter">
     <button type="button" data-sound="on"><span>&#9654;&nbsp; enter with sound</span><small>(recommend)</small></button>
@@ -304,7 +322,8 @@
   // ---------- Ablauf ----------
   const t0=performance.now(); let done=false, beamEndAt=0, showAt=0;
   function frame(now){
-    const t=now-t0, base=cl(t/DURATION,0,1);
+    // Fortschritt = langsamerer von Ladeanimation (Zeit) und echtem Laden der Startseite (window.__load, s. u.)
+    const ld=window.__load||{p:1,done:true}, t=now-t0, base=Math.min(cl(t/DURATION,0,1), ld.done ? 1 : Math.min(0.995, ld.p));
     setPct(base<1 ? Math.min(99, base*100+Math.random()*1.2) : 100);
     const u=reduce?1:cl((t-FLY_START)/FLY_DUR,0,1), f=flight(u);
     goose.style.transform=`translate(${(f.x-gw/2).toFixed(1)}px,${(f.y-gh/2).toFixed(1)}px) rotate(${(GOOSE_ROT+Math.sin(u*Math.PI*3+0.6)*2).toFixed(2)}deg)`;
@@ -330,6 +349,49 @@
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ layout(); layoutCable(); if(!beamDone) hideCable();
     if(revealed) setMask(1e9); draw(performance.now()); });
 })();
+</script>
+<script>
+  /* Die Ladeseite LÄDT die Startseite wirklich vor (in den Browser-Cache – GitHub Pages: max-age, lokal: no-cache -> 304):
+     1) sie liest startpage.html und sammelt automatisch alle dort genannten Dateien (assets/…, inkl. ?v=; ohne Rohmaterial
+        assets/raw und die ?bg=-Varianten) -> keine Liste von Hand pflegen; Grünkohl zuerst (erstes Bild des Vorhangs)
+     2) der Fortschrittsbalken zeigt den echten Stand (Bytes, window.__load.p); die Knöpfe kommen erst, wenn alles da ist
+        (und frühestens nach der Ladeanimation, siehe frame())
+     3) danach im Hintergrund, ohne den Balken aufzuhalten: 3D-Szenen (three.js, Module, Modell + deren Texturen)
+     Erst nach dem eigenen load, damit die Ladeseite selbst nicht gebremst wird. */
+  (function preloadStartpage(){
+    const L = window.__load = { p:0, done:false };
+    const RX = /assets\/[\w\-./]+?\.(?:webp|png|jpe?g|gif|svg|mp4|m4a|mp3|glb|ttf|woff2)(?:\?v=\d+)?/g;
+    const SKIP = /assets\/raw\/|bg-(?:kugeln|glas-grau|glas-sepia|senf)\./;
+    const MODS = ['js/vendor/three/three.module.js', 'js/glass.js', 'js/heart.js', 'js/vendor/three/GLTFLoader.js',
+                  'js/vendor/utils/BufferGeometryUtils.js'];
+    const files = [];
+    const update = ()=>{ let got = 0, want = 0;
+      for(const f of files){ const w = f.len || 150000; want += w; got += f.done ? w : Math.min(f.got, w); }
+      L.p = want ? got/want : 1; };
+    async function get(url, f){                          // lädt komplett (Stream bis zum Ende -> im Cache), zählt Bytes
+      try{
+        const r = await fetch(url); if(f) f.len = +r.headers.get('content-length') || 0;
+        if(f && r.body){ const rd = r.body.getReader(); for(;;){ const { done, value } = await rd.read(); if(done) break; f.got += value.length; update(); } }
+        else return await r.text();
+      }catch(_){}
+    }
+    const scan = (txt)=>[...new Set(txt.match(RX) || [])].filter((u)=>!SKIP.test(u));
+    addEventListener('load', async ()=>{
+      const finish = ()=>{ L.p = 1; L.done = true; };
+      setTimeout(finish, 90000);                         // Notbremse: hängt etwas, kommt man trotzdem rein
+      const html = await get('startpage.html');
+      const urls = html ? scan(html).sort((a, b)=>(b.indexOf('kale') >= 0) - (a.indexOf('kale') >= 0)) : [];
+      await Promise.all(urls.map((u)=>{ const f = { got:0, len:0, done:false }; files.push(f);
+        return get(u, f).then(()=>{ f.done = true; update(); }); }));
+      finish();
+      // Hintergrund: 3D-Module + was sie laden (Modell, Texturen)
+      const mods = await Promise.all(MODS.map((m)=>get(m)));
+      const seen = new Set(urls);
+      await Promise.all(mods.flatMap((t, k)=>t && MODS[k].indexOf('vendor') < 0 ? scan(t) : [])   // Fremdcode nur laden, nicht durchsuchen
+        .filter((u)=>!seen.has(u) && seen.add(u))
+        .map((u)=>get(u, { got:0, len:0, done:false })));
+    });
+  })();
 </script>
 </body>
 </html>
