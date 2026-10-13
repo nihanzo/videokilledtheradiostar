@@ -8,6 +8,10 @@
 <link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
 <link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
 <title>nihanzo</title>
+<!-- Schrift des SCROLL-Rahmens (Vorhang der Startseite) schon hier holen: dann liegt sie im Cache, wenn der Vorhang erscheint -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Turret+Road:wght@300&display=swap" media="print"
+      onload="this.media='all'; try{ document.fonts.load('300 20px \'Turret Road\'', 'SCROLL'); }catch(_){}" />
 <script src="js/device.js"></script>   <!-- NIH_PAGE = startpage.html oder startpage-mobile.html (Handy) -->
 <!--
   LADESEITE – weißer Hintergrund
@@ -143,6 +147,7 @@
 
 <script>
 (function(){
+  let gone=false;                         // true, sobald die Startseite dieses Dokument übernommen hat -> hier ruht alles
   const DURATION = 5200;                 // Laden 0 -> 100 % (bisherige Ladezeit)
   const FLY_START = 250, FLY_DUR = 4700; // Gleitflug der Gans (ms)
   const GOOSE_ROT = 12;                  // Grad im Uhrzeigersinn: Kopf etwas mehr zur Zielecke oben links
@@ -195,7 +200,7 @@
     Object.assign(enter.style,{left:(madR.x+EDGE[0]*mw)+'px', width:ew+'px', top:(madR.y+mh)+'px',
                                fontSize:cl(ew/24,10.5,13).toFixed(1)+'px'});
   }
-  addEventListener('resize',()=>{ layout(); layoutCable(); if(!beamDone) hideCable(); }); layout();
+  addEventListener('resize',()=>{ if(gone) return; layout(); layoutCable(); if(!beamDone) hideCable(); }); layout();
 
   // ---------- USB-C-Kabel ----------
   const seg=[{p:[...$('segA').querySelectorAll('path')], len:1}];
@@ -310,10 +315,11 @@
     if(n>=100){ pb.classList.remove('charging'); if(!enter.classList.contains('show')){ enter.classList.add('show'); showAt=performance.now(); } }
   }
   // Ton-Wahl merken ('on'|'off', sessionStorage 'nihanzo-sound' – liest die Startseite) -> ausblenden -> Startseite (beginnt mit dem Vorhang)
-  // Die Startseite wird NICHT per Seitenwechsel geöffnet, sondern als seitenfüllender Rahmen in DIESER Seite: Browser geben Ton nur
-  // in der Seite frei, in der geklickt wurde (Safari/Firefox/Handys: nach einem Seitenwechsel bliebe „mit Ton" stumm, und Scrollen
+  // Die Startseite wird NICHT per Seitenwechsel geöffnet, sondern in DIESES Dokument geschrieben (document.write): Browser geben Ton
+  // nur in der Seite frei, in der geklickt wurde (Safari/Firefox/Handys: nach einem Seitenwechsel bliebe „mit Ton" stumm, und Scrollen
   // zählt nicht als Klick). Darum entsteht der AudioContext hier IM Klick (window.__nihAudio); die Startseite übernimmt ihn (ensureAudio).
-  let leaving=false, gone=false;
+  // Kein <iframe>: darin ruckeln/flackern fest stehende Ebenen beim Scrollen in manchen Browsern – so läuft sie als ganz normale Seite.
+  let leaving=false;
   function unlockAudio(){
     try{
       const AC=window.AudioContext||window.webkitAudioContext, c=window.__nihAudio=new AC();
@@ -321,14 +327,17 @@
       const s=c.createBufferSource(); s.buffer=c.createBuffer(1,1,22050); s.connect(c.destination); s.start(0);   // stiller Anstoß (iOS)
     }catch(_){}
   }
-  function openStart(){
+  async function openStart(){
+    let html=null; try{ html=await (window.__load && window.__load.html); }catch(_){}
+    if(typeof html!=='string' || html.indexOf('</html>')<0){ location.assign(NIH_PAGE); return; }   // Notfall: klassischer Seitenwechsel
     gone=true;
-    const f=document.createElement('iframe');
-    f.src=NIH_PAGE; f.title='nihanzo'; f.allow='autoplay; fullscreen'; f.setAttribute('allowfullscreen','');
-    f.style.cssText='position:fixed; inset:0; width:100%; height:100%; border:0; background:#fff;';
-    f.addEventListener('load',()=>{ try{ f.contentWindow.focus(); }catch(_){} });   // Tasten (Pfeile, Leertaste) gehen an die Startseite
-    document.body.replaceChildren(f);
-    document.body.style.transition='none'; document.body.style.opacity='1';
+    document.open(); document.write(html); document.close();
+    // Sicherheitsnetz: feuert ein Browser nach dem Schreiben kein neues „load", wird es nachgeholt (die Startseite misst darin)
+    let fired=false; addEventListener('load',()=>{ fired=true; },{once:true});
+    const chk=setInterval(()=>{
+      if(fired){ clearInterval(chk); return; }
+      if(document.readyState==='complete'){ clearInterval(chk); setTimeout(()=>{ if(!fired) dispatchEvent(new Event('load')); }, 400); }
+    }, 200);
   }
   enter.addEventListener('click',(e)=>{
     const b=e.target.closest('button'); if(!b || leaving) return; leaving=true;
@@ -366,7 +375,7 @@
   requestAnimationFrame(frame);
   // Größenänderung / Schrift geladen: Canvas wird geleert -> sofort neu zeichnen (auch im Hintergrund-Tab)
   addEventListener('resize',()=>{ if(gone) return; if(revealed) setMask(1e9); draw(performance.now()); if(done) requestAnimationFrame(frame); });
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ layout(); layoutCable(); if(!beamDone) hideCable();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if(gone) return; layout(); layoutCable(); if(!beamDone) hideCable();
     if(revealed) setMask(1e9); draw(performance.now()); });
 })();
 </script>
@@ -399,7 +408,7 @@
     addEventListener('load', async ()=>{
       const finish = ()=>{ L.p = 1; L.done = true; };
       setTimeout(finish, 90000);                         // Notbremse: hängt etwas, kommt man trotzdem rein
-      const html = await get(NIH_PAGE);
+      const html = await (L.html = get(NIH_PAGE));       // Text der Startseite – openStart() schreibt ihn später in dieses Dokument
       const urls = html ? scan(html).sort((a, b)=>(b.indexOf('kale') >= 0) - (a.indexOf('kale') >= 0)) : [];
       await Promise.all(urls.map((u)=>{ const f = { got:0, len:0, done:false }; files.push(f);
         return get(u, f).then(()=>{ f.done = true; update(); }); }));

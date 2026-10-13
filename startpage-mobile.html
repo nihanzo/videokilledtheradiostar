@@ -657,6 +657,21 @@
     document.fonts && document.fonts.load('300 20px "Turret Road"').then(()=>{ if(!done) layoutRing(); }, ()=>{});   // Breite erst mit der echten Schrift
     // das Google-Font-CSS lädt nicht blockierend nach (load() oben findet die Schrift dann noch nicht) -> neu auslegen, sobald sie da ist
     document.fonts && document.fonts.addEventListener('loadingdone', ()=>{ if(!done) layoutRing(); });
+    // Nicht jeder Browser meldet das Eintreffen der Schrift zuverlässig (dann stand der Rahmen mit den Maßen der Ersatzschrift da und
+    // sah je nach Besuch anders aus). Darum zusätzlich, solange der Vorhang steht: (1) Rahmen erst zeigen, wenn „Turret Road" wirklich
+    // geladen ist (spätestens nach 2,5 s), (2) die Wortbreite an einer unsichtbaren Probe beobachten und bei jeder Änderung neu auslegen.
+    const probe = document.createElement('span'); probe.textContent = WORD; probe.setAttribute('aria-hidden', 'true');
+    probe.style.cssText = "position:absolute; left:0; top:0; visibility:hidden; pointer-events:none; white-space:nowrap; font:300 100px 'Turret Road', var(--font); text-transform:none;";
+    el.appendChild(probe);
+    const ringFontReady = ()=>{ try{ for(const f of document.fonts) if(/Turret Road/i.test(f.family) && f.status === 'loaded') return true; }catch(_){} return false; };
+    let probeW = probe.offsetWidth, ringShown = false; const ringT0 = performance.now();
+    ring.style.visibility = 'hidden';
+    const ringTick = ()=>{
+      if(done){ clearInterval(ringWatch); return; }
+      const w = probe.offsetWidth; if(w !== probeW){ probeW = w; layoutRing(); }
+      if(!ringShown && (ringFontReady() || performance.now() - ringT0 > 2500)){ ringShown = true; layoutRing(); ring.style.visibility = 'visible'; }
+    };
+    const ringWatch = setInterval(ringTick, 120); ringTick();   // Schrift schon da (Ladeseite hat sie geholt) -> Rahmen sofort
 
     const wrap = hero.querySelector('.hero__wrap'), A_END = 0.38;   // 1) rechts -> Grünkohl  2) oben + unten -> ganz weg
     function finish(){
@@ -713,9 +728,9 @@
   function ensureAudio(){
     if(audioCtx) return;
     try{
-      // von der Ladeseite geöffnet (Rahmen in index.html): deren AudioContext übernehmen – er wurde im Klick auf „enter with sound"
-      // erzeugt und läuft deshalb in jedem Browser; direkt geöffnet (startpage.html?…) entsteht wie bisher ein eigener
-      let shared=null; try{ if(window.parent!==window) shared=window.parent.__nihAudio||null; }catch(_){}
+      // von der Ladeseite geöffnet (index.html schreibt diese Seite in ihr eigenes Dokument): deren AudioContext übernehmen – er wurde
+      // im Klick auf „enter with sound" erzeugt und läuft deshalb in jedem Browser; direkt geöffnet (startpage.html?…) entsteht ein eigener
+      const shared=window.__nihAudio||null;
       audioCtx = (shared && shared.state!=='closed') ? shared : new (window.AudioContext||window.webkitAudioContext)();
       master = audioCtx.createGain();
       master.gain.value = muted ? 0 : 0.9;
