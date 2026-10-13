@@ -310,19 +310,38 @@
     if(n>=100){ pb.classList.remove('charging'); if(!enter.classList.contains('show')){ enter.classList.add('show'); showAt=performance.now(); } }
   }
   // Ton-Wahl merken ('on'|'off', sessionStorage 'nihanzo-sound' – liest die Startseite) -> ausblenden -> Startseite (beginnt mit dem Vorhang)
-  let leaving=false;
+  // Die Startseite wird NICHT per Seitenwechsel geöffnet, sondern als seitenfüllender Rahmen in DIESER Seite: Browser geben Ton nur
+  // in der Seite frei, in der geklickt wurde (Safari/Firefox/Handys: nach einem Seitenwechsel bliebe „mit Ton" stumm, und Scrollen
+  // zählt nicht als Klick). Darum entsteht der AudioContext hier IM Klick (window.__nihAudio); die Startseite übernimmt ihn (ensureAudio).
+  let leaving=false, gone=false;
+  function unlockAudio(){
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext, c=window.__nihAudio=new AC();
+      c.resume();
+      const s=c.createBufferSource(); s.buffer=c.createBuffer(1,1,22050); s.connect(c.destination); s.start(0);   // stiller Anstoß (iOS)
+    }catch(_){}
+  }
+  function openStart(){
+    gone=true;
+    const f=document.createElement('iframe');
+    f.src=NIH_PAGE; f.title='nihanzo'; f.allow='autoplay; fullscreen'; f.setAttribute('allowfullscreen','');
+    f.style.cssText='position:fixed; inset:0; width:100%; height:100%; border:0; background:#fff;';
+    f.addEventListener('load',()=>{ try{ f.contentWindow.focus(); }catch(_){} });   // Tasten (Pfeile, Leertaste) gehen an die Startseite
+    document.body.replaceChildren(f);
+    document.body.style.transition='none'; document.body.style.opacity='1';
+  }
   enter.addEventListener('click',(e)=>{
     const b=e.target.closest('button'); if(!b || leaving) return; leaving=true;
     try{ sessionStorage.setItem('nihanzo-sound', b.dataset.sound); }catch(_){}
+    if(b.dataset.sound==='on') unlockAudio();
     document.body.style.transition='opacity .8s ease'; document.body.style.opacity='0';
-    setTimeout(()=>location.assign(NIH_PAGE), 800);
+    setTimeout(openStart, 800);
   });
-  // Zurück-Taste (bfcache): Seite wieder sichtbar machen
-  addEventListener('pageshow',(e)=>{ if(e.persisted){ leaving=false; document.body.style.transition='none'; document.body.style.opacity='1'; } });
 
   // ---------- Ablauf ----------
   const t0=performance.now(); let done=false, beamEndAt=0, showAt=0;
   function frame(now){
+    if(gone) return;                                  // Startseite ist offen -> Ladeseite ruht
     // Fortschritt = langsamerer von Ladeanimation (Zeit) und echtem Laden der Startseite (window.__load, s. u.)
     const ld=window.__load||{p:1,done:true}, t=now-t0, base=Math.min(cl(t/DURATION,0,1), ld.done ? 1 : Math.min(0.995, ld.p));
     setPct(base<1 ? Math.min(99, base*100+Math.random()*1.2) : 100);
@@ -346,7 +365,7 @@
   }
   requestAnimationFrame(frame);
   // Größenänderung / Schrift geladen: Canvas wird geleert -> sofort neu zeichnen (auch im Hintergrund-Tab)
-  addEventListener('resize',()=>{ if(revealed) setMask(1e9); draw(performance.now()); if(done) requestAnimationFrame(frame); });
+  addEventListener('resize',()=>{ if(gone) return; if(revealed) setMask(1e9); draw(performance.now()); if(done) requestAnimationFrame(frame); });
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ layout(); layoutCable(); if(!beamDone) hideCable();
     if(revealed) setMask(1e9); draw(performance.now()); });
 })();

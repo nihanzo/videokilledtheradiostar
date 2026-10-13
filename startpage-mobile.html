@@ -713,7 +713,10 @@
   function ensureAudio(){
     if(audioCtx) return;
     try{
-      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      // von der Ladeseite geöffnet (Rahmen in index.html): deren AudioContext übernehmen – er wurde im Klick auf „enter with sound"
+      // erzeugt und läuft deshalb in jedem Browser; direkt geöffnet (startpage.html?…) entsteht wie bisher ein eigener
+      let shared=null; try{ if(window.parent!==window) shared=window.parent.__nihAudio||null; }catch(_){}
+      audioCtx = (shared && shared.state!=='closed') ? shared : new (window.AudioContext||window.webkitAudioContext)();
       master = audioCtx.createGain();
       master.gain.value = muted ? 0 : 0.9;
       master.connect(audioCtx.destination);

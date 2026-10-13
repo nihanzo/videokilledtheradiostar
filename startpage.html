@@ -209,13 +209,13 @@
     box-shadow:15px 0 0 #febc2e, 30px 0 0 #28c840; }
   .sb-cap{ font-size:clamp(16px,2.1vw,30px);      /* Untertitel zentriert unter dem Bild */
     background:rgba(255,255,255,.96); border-radius:9px; padding:4px 13px; }
-  .sb-text span{ font-size:calc(clamp(20px,2.7vw,40px) - 4pt); }   /* 2 × 2pt kleiner */
+  .sb-text span{ font-size:calc(clamp(20px,2.7vw,40px) - 6pt); }   /* 3 × 2pt kleiner */
   /* kleine URL-Leiste in der Titelleiste */
   .sb-url{ position:absolute; top:5px; left:58px; right:12px; height:17px; z-index:1;
     background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:5px;
     font:800 10px/17px var(--font); font-style:normal; color:var(--accent);
     text-align:left; padding-left:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .sb-text .plus{ font-size:calc((clamp(20px,2.7vw,40px) - 4pt) * .5); opacity:.85; }   /* halb so groß wie die Wörter (vorher fest ~11 px) */
+  .sb-text .plus{ font-size:calc((clamp(20px,2.7vw,40px) - 6pt) * .5); opacity:.85; }   /* halb so groß wie die Wörter (vorher fest ~11 px) */
 
   /* Sound-Control: Equalizer unten rechts in der Ecke, senffarben (Balken schlagen nach oben aus) */
   .eq{
@@ -253,7 +253,7 @@
     color:var(--accent); font-family:var(--font); font-size:16px; letter-spacing:.03em; text-transform:lowercase; }
 
   /* Scroll-Orientierung rechts am Rand: Start · 3D · About · Video · Galerie (Rosen-Balken, Akzent Altrosa) */
-  .progress{ position:fixed; right:16px; top:50%; transform:translateY(-50%);
+  .progress{ position:fixed; right:16px; top:55%; transform:translateY(-50%);
     z-index:78; display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none;
     transition:opacity .6s ease; }
   .curtain-on .progress{ opacity:0; visibility:hidden; }   /* Fortschrittsbalken erst, wenn der Vorhang nach links weicht */
@@ -315,13 +315,13 @@
   .corner--roses, .clink{ --bandL:calc(var(--flowIn) - 9.5vh); --figX:calc(var(--bandL) + 0.484 * (100vw - var(--bandL)));
     --figL:calc(var(--bandL) + 0.433 * (100vw - var(--bandL))); --statR:calc(0.509 * clamp(300px,34vw,600px)); }
   /* Rosen in der Vase: unten rechts, mittig zwischen der Figur und dem Ton-Knopf (eq: right 20px + 85px breit) */
-  .corner--roses{ bottom:2vh; height:clamp(90px,16.2vh,180px); width:auto;
+  .corner--roses{ bottom:4vh; height:clamp(90px,16.2vh,180px); width:auto;
     left:calc((var(--figX) + 100vw - 105px) / 2); transform:translate(-50%, 3%);
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.2)); }
   /* Zwei Gläser stoßen an: genau in der Mitte der Lücke zwischen Statue (sichtbare Kante) und Figur (linke Kante); jedes
      Glas um seinen Fuß zur Mitte gekippt (±16°), Abstand der Füße so, dass sich die Ränder oben berühren (Glas 268×600) */
   .clink{ position:fixed; z-index:40; pointer-events:none; bottom:1vh;
-    --gh:clamp(46.8px, min(10.44vh, (var(--figL) - var(--statR)) * 0.288), 115.2px);   /* halbe Größe −10 % −20 %, passt in die Lücke */
+    --gh:clamp(39.8px, min(8.87vh, (var(--figL) - var(--statR)) * 0.245), 97.9px);   /* halbe Größe −10 % −20 % −15 %, passt in die Lücke */
     height:var(--gh); width:calc(var(--gh) * 1.32);
     left:calc((var(--statR) + var(--figL)) / 2); transform:translateX(-50%); }
   .clink img{ position:absolute; bottom:0; height:100%; width:auto; transform-origin:50% 100%;
@@ -676,7 +676,10 @@
   function ensureAudio(){
     if(audioCtx) return;
     try{
-      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      // von der Ladeseite geöffnet (Rahmen in index.html): deren AudioContext übernehmen – er wurde im Klick auf „enter with sound"
+      // erzeugt und läuft deshalb in jedem Browser; direkt geöffnet (startpage.html?…) entsteht wie bisher ein eigener
+      let shared=null; try{ if(window.parent!==window) shared=window.parent.__nihAudio||null; }catch(_){}
+      audioCtx = (shared && shared.state!=='closed') ? shared : new (window.AudioContext||window.webkitAudioContext)();
       master = audioCtx.createGain();
       master.gain.value = muted ? 0 : 0.9;
       master.connect(audioCtx.destination);
