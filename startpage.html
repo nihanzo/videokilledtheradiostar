@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <!-- Schrift: eigene „Nihanzo Grotesk“ (assets/fonts/nihanzo, nach dem Stil des Musterbilds gezeichnet: sehr fett,
      weiche Ecken, enge Laufweite; nur Kleinbuchstaben, Ziffern und Satzzeichen – Großbuchstaben zeigen die Kleinbuchstaben) -->
+<script src="js/device.js"></script>
+<script>if(NIH_PHONE) location.replace('startpage-mobile.html' + location.search);</script>   <!-- Handys -> eigene Handy-Startseite -->
 <link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
 <link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
 <!-- SCROLL-Rahmen im Vorhang: Turret Road 300 (eckige 2000er-Blockschrift, dünn) -->
@@ -313,13 +315,13 @@
   .corner--roses, .clink{ --bandL:calc(var(--flowIn) - 9.5vh); --figX:calc(var(--bandL) + 0.484 * (100vw - var(--bandL)));
     --figL:calc(var(--bandL) + 0.433 * (100vw - var(--bandL))); --statR:calc(0.509 * clamp(300px,34vw,600px)); }
   /* Rosen in der Vase: unten rechts, mittig zwischen der Figur und dem Ton-Knopf (eq: right 20px + 85px breit) */
-  .corner--roses{ bottom:0; height:clamp(90px,16.2vh,180px); width:auto;
+  .corner--roses{ bottom:2vh; height:clamp(90px,16.2vh,180px); width:auto;
     left:calc((var(--figX) + 100vw - 105px) / 2); transform:translate(-50%, 3%);
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.2)); }
   /* Zwei Gläser stoßen an: genau in der Mitte der Lücke zwischen Statue (sichtbare Kante) und Figur (linke Kante); jedes
      Glas um seinen Fuß zur Mitte gekippt (±16°), Abstand der Füße so, dass sich die Ränder oben berühren (Glas 268×600) */
   .clink{ position:fixed; z-index:40; pointer-events:none; bottom:1vh;
-    --gh:clamp(58.5px, min(13.05vh, (var(--figL) - var(--statR)) * 0.36), 144px);   /* halbe Größe −10 %, passt in die Lücke */
+    --gh:clamp(46.8px, min(10.44vh, (var(--figL) - var(--statR)) * 0.288), 115.2px);   /* halbe Größe −10 % −20 %, passt in die Lücke */
     height:var(--gh); width:calc(var(--gh) * 1.32);
     left:calc((var(--statR) + var(--figL)) / 2); transform:translateX(-50%); }
   .clink img{ position:absolute; bottom:0; height:100%; width:auto; transform-origin:50% 100%;

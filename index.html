@@ -8,6 +8,7 @@
 <link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
 <link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
 <title>nihanzo</title>
+<script src="js/device.js"></script>   <!-- NIH_PAGE = startpage.html oder startpage-mobile.html (Handy) -->
 <!--
   LADESEITE – weißer Hintergrund
    1. Gans aus Kreuzen (assets/img/goose-body.webp + goose-wing-far/-near.webp, leichter Flügelschlag) gleitet von unten rechts diagonal nach oben links raus
@@ -314,7 +315,7 @@
     const b=e.target.closest('button'); if(!b || leaving) return; leaving=true;
     try{ sessionStorage.setItem('nihanzo-sound', b.dataset.sound); }catch(_){}
     document.body.style.transition='opacity .8s ease'; document.body.style.opacity='0';
-    setTimeout(()=>location.assign('startpage.html'), 800);
+    setTimeout(()=>location.assign(NIH_PAGE), 800);
   });
   // Zurück-Taste (bfcache): Seite wieder sichtbar machen
   addEventListener('pageshow',(e)=>{ if(e.persisted){ leaving=false; document.body.style.transition='none'; document.body.style.opacity='1'; } });
@@ -352,7 +353,7 @@
 </script>
 <script>
   /* Die Ladeseite LÄDT die Startseite wirklich vor (in den Browser-Cache – GitHub Pages: max-age, lokal: no-cache -> 304):
-     1) sie liest startpage.html und sammelt automatisch alle dort genannten Dateien (assets/…, inkl. ?v=; ohne Rohmaterial
+     1) sie liest die passende Startseite (NIH_PAGE: startpage.html bzw. auf Handys startpage-mobile.html) und sammelt automatisch alle dort genannten Dateien (assets/…, inkl. ?v=; ohne Rohmaterial
         assets/raw und die ?bg=-Varianten) -> keine Liste von Hand pflegen; Grünkohl zuerst (erstes Bild des Vorhangs)
      2) der Fortschrittsbalken zeigt den echten Stand (Bytes, window.__load.p); die Knöpfe kommen erst, wenn alles da ist
         (und frühestens nach der Ladeanimation, siehe frame())
@@ -379,7 +380,7 @@
     addEventListener('load', async ()=>{
       const finish = ()=>{ L.p = 1; L.done = true; };
       setTimeout(finish, 90000);                         // Notbremse: hängt etwas, kommt man trotzdem rein
-      const html = await get('startpage.html');
+      const html = await get(NIH_PAGE);
       const urls = html ? scan(html).sort((a, b)=>(b.indexOf('kale') >= 0) - (a.indexOf('kale') >= 0)) : [];
       await Promise.all(urls.map((u)=>{ const f = { got:0, len:0, done:false }; files.push(f);
         return get(u, f).then(()=>{ f.done = true; update(); }); }));
