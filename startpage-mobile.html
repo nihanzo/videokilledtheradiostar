@@ -41,7 +41,7 @@
     --bldW: clamp(220px,28vw,520px);
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
-  html,body{ height:100%; }
+  html,body{ height:100%; overscroll-behavior:none; }   /* kein Gummiband am Seitenrand (Mac-Trackpad: Seite rutscht sonst kurz mit), kein Wischen zur vorigen Seite */
   body{
     background:#efe9ee; font-family:var(--font); font-weight:800; text-transform:lowercase;   /* alles klein */
     overflow-x:hidden; cursor:none;
