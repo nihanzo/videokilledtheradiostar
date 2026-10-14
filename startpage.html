@@ -10,8 +10,11 @@
 <link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
 <link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
 <!-- SCROLL-Rahmen im Vorhang: Turret Road 300 (eckige 2000er-Blockschrift, dünn) -->
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Turret+Road:wght@300&display=swap" media="print" onload="this.media='all'" />
+<!-- lokal statt Google Fonts (keine IP-Übermittlung an Google, DSGVO) -->
+<link rel="preload" href="assets/fonts/turret-road/TurretRoad-Light-latin.woff2" as="font" type="font/woff2" crossorigin />
+<style>@font-face{ font-family:'Turret Road'; font-style:normal; font-weight:300; font-display:swap; src:url('assets/fonts/turret-road/TurretRoad-Light-latin.woff2') format('woff2'); }
+  @font-face{ font-family:'Turret Road'; font-style:normal; font-weight:400; font-display:swap; src:url('assets/fonts/turret-road/TurretRoad-Regular-latin.woff2') format('woff2'); }
+  @font-face{ font-family:'Turret Road'; font-style:normal; font-weight:700; font-display:swap; src:url('assets/fonts/turret-road/TurretRoad-Bold-latin.woff2') format('woff2'); }</style>
 <title>nihanzo — startseite</title>
 <!-- Hintergrund-Varianten: Standard = Glas-Foto (warm) in der Mitte; ?bg=grau (Glas-Foto blau-grau) · ?bg=senf (Senf-Verlauf) · ?bg=kugeln (Kugel-Tunnel, voll) -->
 <script>{ const b = new URLSearchParams(location.search).get('bg'); if(['senf','kugeln','grau'].includes(b)) document.documentElement.classList.add('bg-'+b); }</script>
@@ -40,7 +43,8 @@
     --bldW: clamp(220px,28vw,520px);
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
-  html,body{ height:100%; overscroll-behavior:none; }   /* kein Gummiband am Seitenrand (Mac-Trackpad: Seite rutscht sonst kurz mit), kein Wischen zur vorigen Seite */
+  html,body{ height:100%; overscroll-behavior:none; }
+  html, html *{ cursor:none !important; }   /* System-Mauszeiger nirgends (nur die springende Figur #cursor) */   /* kein Gummiband am Seitenrand (Mac-Trackpad: Seite rutscht sonst kurz mit), kein Wischen zur vorigen Seite */
   body{
     background:#efe9ee; font-family:var(--font); font-weight:800; text-transform:lowercase;   /* alles klein */
     overflow-x:hidden; cursor:none;
@@ -81,7 +85,7 @@
   .bgPic{ position:absolute; pointer-events:none; opacity:.75;
     left:calc(var(--flowIn) - 9.5vh); right:0;
     top:calc(var(--topReach) * 0.2);   /* höchste Lücke zwischen den kopfüber hängenden Häusern (gemessen ≈ 21 %) */
-    bottom:calc((100vw - var(--flowIn) + 9.5vh) * 403 / 3800 * 0.93);
+    bottom:calc((100vw - var(--flowIn) + 9.5vh) * 346 / 3800 * 0.93);
     background:url(assets/img/bg-glas.webp) center / cover no-repeat; overflow:hidden; }
   /* leichte Film-Körnung über dem Senf-Bild (grain.webp = nahtlose 320er-Kachel, helle + dunkle Körner mit Alpha);
      springt 5× pro Sekunde an eine andere Stelle (nur transform -> kein Neuzeichnen) */
@@ -267,11 +271,11 @@
   .progress .seg:has(.hit:hover) .lbl{ opacity:1; }     /* Beschriftung nur beim Hover über den Balken */
   /* jeder Balken = umgedrehte Rose (Linolschnitt-Maske aus assets/raw/rose-linocut.png, 180° gedreht): Stiel oben,
      Blüte hängt nach unten; Füllung läuft den Stiel hinunter in die Blüte */
-  .progress .track{ position:relative; width:27px; height:61px; pointer-events:none; background:rgba(111,121,143,.35);
+  .progress .track{ position:relative; width:27px; height:61px; pointer-events:none; background:rgba(122,53,36,.35);
     -webkit-mask:url('assets/img/rose-mask.png') center / 100% 100% no-repeat; mask:url('assets/img/rose-mask.png') center / 100% 100% no-repeat; }
   .progress .fill{ position:absolute; left:0; top:0; width:100%; height:100%;
     transform-origin:50% 0; transform:scaleY(0); will-change:transform;   /* Füllung per transform (kein Layout) */
-    background:var(--accent); }
+    background:#7A3524; }
 
   /* Glas-Objekt (3D, three.js) – Schluss-Szene: kommt aus der Ferne in die Mitte, 1 Umdrehung.
      Transparenter Vollbild-Canvas IN der Stage unter dem Ring (z18) -> Szene bleibt komplett sichtbar */
@@ -310,24 +314,26 @@
     filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)); }
   .corner--building{ top:0; right:0; width:var(--bldW);
     filter:drop-shadow(0 8px 22px rgba(0,0,0,.18)); }
-  /* Lage der Figur im Bronze-Band (frame-bronze.webp: Kopf von 43,3 % bis 55 %, Mitte 48,4 %; Band beginnt bei
+  /* Lage der Figur im Bronze-Band (frame-bronze.webp 3800×346 = alte 403er Fassung oben 57 px tiefer beschnitten, unten
+     bündig -> alle Lagen ab Unterkante bleiben gleich: Kopf von 43,3 % bis 55 %, Mitte 48,4 %; Band beginnt bei
      flowIn − 9.5vh) und der Statue (sichtbare rechte Kante = 73,9 % der Bildbreite, Bild um 23 % nach links versetzt) */
-  .corner--roses, .clink{ --bandL:calc(var(--flowIn) - 9.5vh); --figX:calc(var(--bandL) + 0.484 * (100vw - var(--bandL)));
+  .corner--roses, .sip{ --bandL:calc(var(--flowIn) - 9.5vh); --figX:calc(var(--bandL) + 0.484 * (100vw - var(--bandL)));
     --figL:calc(var(--bandL) + 0.433 * (100vw - var(--bandL))); --statR:calc(0.509 * clamp(300px,34vw,600px)); }
-  /* Rosen in der Vase: unten rechts, mittig zwischen der Figur und dem Ton-Knopf (eq: right 20px + 85px breit) */
-  .corner--roses{ bottom:4vh; height:clamp(90px,16.2vh,180px); width:auto;
-    left:calc((var(--figX) + 100vw - 105px) / 2); transform:translate(-50%, 3%);
+  /* Rosen in der Vase: klein, unten links dicht am Statuen-Sockel (statue.webp: rechte Kante unten 0,61−0,70 der Bildbreite,
+     Bild um 23 % nach links versetzt -> 0,38−0,47 der Statuenbreite; Blüten dürfen leicht vor die Statue ragen) */
+  .corner--roses{ bottom:.3vh; height:clamp(63px,11.3vh,126px); width:auto;
+    left:calc(0.42 * clamp(300px,34vw,600px)); transform:translateY(3%);
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.2)); }
-  /* Zwei Gläser stoßen an: genau in der Mitte der Lücke zwischen Statue (sichtbare Kante) und Figur (linke Kante); jedes
-     Glas um seinen Fuß zur Mitte gekippt (±16°), Abstand der Füße so, dass sich die Ränder oben berühren (Glas 268×600) */
-  .clink{ position:fixed; z-index:40; pointer-events:none; bottom:1vh;
-    --gh:clamp(39.8px, min(8.87vh, (var(--figL) - var(--statR)) * 0.245), 97.9px);   /* halbe Größe −10 % −20 % −15 %, passt in die Lücke */
-    height:var(--gh); width:calc(var(--gh) * 1.32);
-    left:calc((var(--statR) + var(--figL)) / 2); transform:translateX(-50%); }
-  .clink img{ position:absolute; bottom:0; height:100%; width:auto; transform-origin:50% 100%;
+  /* Ein Glas schwebt schräg über dem Kopf der Figur im Bronze-Band: Stiel = vom User gezeichnete Linie (Fuß unten links,
+     Kelch oben rechts, 64°); das Glas endet am 3. User-Strich, dann 5 px (bei 1000 px Breite) tiefer: Box = 0×0-Punkt
+     am Glasrand (glass-clink.webp 268×600: y 2 %), liegt bei frame-bronze.webp x 49,10 %, 62,6 % der Bandhöhe über dem Boden. Größe folgt dem Band (= Kopfgröße).
+     Schatten am Rahmen-Div, damit er trotz Drehung nach unten fällt */
+  .sip{ position:fixed; z-index:40; pointer-events:none; width:0; height:0;
+    --bandW:calc(100vw - var(--bandL)); --gh:calc(var(--bandW) * 0.037);   /* −20 % */
+    left:calc(var(--bandL) + 0.4984 * var(--bandW)); bottom:calc(var(--bandW) * 0.1061 * 0.626);   /* zuletzt 3 px links, 5 px hoch (bei 1000 px) */
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.18)); }
-  .clink img:first-child{ left:0; transform:rotate(16deg); }
-  .clink img:last-child{ right:0; transform:scaleX(-1) rotate(16deg); }
+  .sip img{ position:absolute; left:calc(var(--gh) * -0.2233); top:calc(var(--gh) * -0.02); height:var(--gh); width:auto;
+    transform-origin:50% 2%; transform:rotate(64deg); }
   /* Boxsack: hängt UNTER dem Gebäude – die Kette ist an dessen Decke (Unterseite, building.webp 1536×1024:
      Aufhängung bei Bildpunkt 1280/720, mitten in der Deckenfläche; Unterkante dort bei ~y 838) befestigt.
      Nullpunkt = Aufhängung. --u = Pixel pro Bildpixel der Boxsack-Quelle (1024×1536: Aufhängung 520/80, Ring 523/652).
@@ -356,6 +362,44 @@
   .loopFade{ position:fixed; inset:0; z-index:19; background:#fff; opacity:0; pointer-events:none; }
 
   /* alter Cursor (springende Figur) wie im Intro */
+  /* ---- Legal notice: Link unten rechts (links neben dem Ton-Knopf) + Mac-Browserfenster (GSAP Draggable) ---- */
+  .legalLink{ position:fixed; right:117px; bottom:16px; z-index:80; pointer-events:auto;
+    font-family:var(--font); font-size:12px; letter-spacing:.03em; text-transform:lowercase; color:#EAD39B;
+    text-decoration:underline; text-underline-offset:.25em; text-shadow:0 1px 3px rgba(0,0,0,.35); transition:opacity .6s ease; }
+  .curtain-on .legalLink{ opacity:0; visibility:hidden; }        /* erst nach dem Vorhang, wie der Fortschrittsbalken */
+  /* öffnet sich über der unteren rechten Bildschirmhälfte; z unter der Cursor-Figur (9999) */
+  .legalWin{ position:fixed; left:calc(50vw + 8px); top:calc(50vh + 8px); width:calc(50vw - 24px); height:calc(50vh - 24px);
+    min-width:min(340px, 100vw - 16px); min-height:240px; z-index:9000; display:flex; flex-direction:column;
+    background:#fff; border-radius:11px; overflow:hidden; color:#7A3524; text-transform:lowercase; font-weight:400;
+    font-family:'Turret Road', var(--font);   /* Schrift wie der SCROLL-Rahmen, alles klein */
+    box-shadow:0 0 0 .5px rgba(0,0,0,.28), 0 24px 70px rgba(0,0,0,.34), 0 8px 22px rgba(0,0,0,.16); will-change:transform; }
+  .legalWin[hidden]{ display:none; }
+  /* Titelleiste = Griff zum Ziehen; Ampel links, Adressfeld mittig */
+  .lw__bar{ flex:none; position:relative; height:42px; display:flex; align-items:center; padding:0 14px;
+    background:linear-gradient(#efefef,#e1e1e1); border-bottom:1px solid #cfcfcf; user-select:none; -webkit-user-select:none; touch-action:none; }
+  .lw__lights{ display:flex; gap:8px; position:relative; z-index:1; }
+  .lw__light{ width:12px; height:12px; border-radius:50%; border:0; padding:0; box-shadow:inset 0 0 0 .5px rgba(0,0,0,.22); }
+  .lw__close{ background:#ff5f57; display:grid; place-items:center; pointer-events:auto; }
+  .lw__close svg{ width:6px; height:6px; display:block; stroke:#b3170e; stroke-width:1.6; stroke-linecap:round; }   /* × genau mittig, rötlich */
+  .lw__close:focus-visible{ outline:2px solid #987931; outline-offset:2px; }
+  .lw__min{ background:#febc2e; } .lw__max{ background:#28c840; }
+  .lw__url{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(360px, 100% - 150px); height:26px;
+    border-radius:7px; background:rgba(255,255,255,.85); box-shadow:inset 0 0 0 .5px rgba(0,0,0,.14);
+    display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; color:#3c3c3c; white-space:nowrap; overflow:hidden; }
+  .lw__url svg{ width:9px; height:11px; flex:none; fill:#6b6b6b; }
+  .lw__url span{ color:#8a8a8a; }
+  /* Inhalt scrollt für sich (die Seite dahinter bleibt stehen) */
+  .lw__body{ flex:1; overflow-y:auto; overscroll-behavior:contain; padding:26px 32px 40px; font-size:13.5px; line-height:1.6;
+    user-select:text; -webkit-user-select:text; scrollbar-width:thin; scrollbar-color:rgba(122,53,36,.35) transparent; }
+  .lw__body h1{ font-size:21px; line-height:1.25; margin:0 0 14px; font-weight:700; letter-spacing:-.01em; }
+  .lw__body h2{ font-size:16px; margin:30px 0 8px; font-weight:700; }
+  .lw__body h3{ font-size:13.5px; margin:20px 0 4px; font-weight:700; }
+  .lw__body p{ margin:0 0 10px; }
+  .lw__body ul{ margin:0 0 10px; padding-left:20px; }
+  .lw__body li{ margin:0 0 3px; }
+  .lw__body a{ color:#987931; text-underline-offset:.2em; }
+  .lw__body hr{ border:0; border-top:1px solid rgba(122,53,36,.2); margin:30px 0 0; }
+  .lw__body .lw__small{ font-size:12px; opacity:.8; }
   #cursor{ position:fixed; left:0; top:0; width:34px; z-index:9999; pointer-events:none; transform-origin:54.3% 1.8%; /* Spitze = Kopf */
     transform:translate(-200px,-200px); will-change:transform; opacity:.96; }
   #cursor img{ width:100%; height:auto; display:block; filter:drop-shadow(0 2px 5px rgba(0,0,0,.35)); }
@@ -368,11 +412,11 @@
   #curtainGl{ position:absolute; inset:0; background:#fff; }   /* Vorhang ganz weiß */
   #curtain .hero{ position:absolute; inset:0; display:grid; place-items:center; }
   #curtain .hero__wrap{ position:relative; width:min(1150px,94vw); }
-  /* Grünkohl-Bild ist DECKEND (auf Weiß verrechnet, Schatten eingebacken) und hat 64 px Rand für den Schatten:
-     1278×709 = Kohl-Kasten 1150×581 + 2·64 -> per negativem Rand (Prozent = von der Breite) liegt der Kohl wie vorher */
-  #curtain .hero__kale{ width:calc(100% * 1278 / 1150); max-width:none; height:auto; display:block;
-    margin:calc(-100% * 64 / 1150);
-    filter:brightness(1.012); }   /* WebP (verlustbehaftet, YUV) macht aus Weiß 254 -> wieder 255 = nahtlos im weißen Vorhang */
+  #curtain .hero__kale{ width:100%; height:auto; display:block; filter:drop-shadow(0 18px 30px rgba(0,0,0,.18)); }
+  /* „endless scroll page“ mittig über dem Grünkohl (Schrift + Farbe wie der SCROLL-Rahmen) */
+  #curtain .hero__kicker{ position:absolute; left:50%; bottom:calc(100% + clamp(10px, 3.2vh, 34px)); transform:translateX(-50%);
+    white-space:nowrap; font-family:'Turret Road', var(--font); font-weight:300; text-transform:lowercase;
+    font-size:clamp(16px, 1.9vw, 30px); letter-spacing:.08em; color:#BB4F4E; pointer-events:none; }
   /* SCROLL-Rahmen: Versalien in der Farbe des „re“, einmal rings um den Bildschirmrand (SVG-Textpfad, per JS gebaut) */
   #curtain .scrollRing{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
   #curtain .scrollRing text{ font-family:'Turret Road', var(--font); font-weight:300; text-transform:none; fill:#BB4F4E; }
@@ -399,6 +443,9 @@
 </head>
 <body>
 
+  <!-- Cursor-Figur: außerhalb der Bühne (die ist eine eigene Ebene z1), damit sie über ALLEM liegt, auch über dem Legal-Fenster -->
+  <div id="cursor"><img src="assets/img/cursor-jump.webp" alt=""></div>
+
   <div class="stage">
     <!-- Loch-Inneres -->
     <div class="core" id="core">
@@ -418,8 +465,12 @@
 
     <!-- Galerie: zentrales Motiv, wechselt Original <-> Skizze (gleiche Größe) -->
     <div class="centerpic" id="centerpic">
-      <img class="cp cp--orig"   id="cpOrig"   src="assets/img/metalman.webp"        alt="Metall-Figur" />
-      <img class="cp cp--sketch" id="cpSketch" src="assets/img/metalman-sketch.webp" alt="Skizze der Metall-Figur" />
+      <img class="cp cp--orig"   id="cpOrig"   src="assets/img/metalman.webp?v=2"        alt="Metall-Figur" />
+      <!-- Kasten 1 enthüllt das rote Buntstift-Bild (mit Bleistift-Geräusch), Kasten 3 das Anime-Bild (ohne Ton); beide aus
+           raw *-originalmasse.png (2250×3000), per .claude/video/register_figure.py auf den Umriss des Originals verformt
+           (Deckung 99,6 %), dann mit demselben Rahmen wie metalman.webp beschnitten (628,417)–(1943,2503) -> 822×1300 -->
+      <img class="cp cp--sketch" id="cpSketch" src="assets/img/metalman-buntstift.webp?v=3" alt="Metall-Figur als roter Buntstift" />
+      <img class="cp cp--sketch" id="cpAnime"  src="assets/img/metalman-anime.webp?v=3"     alt="Metall-Figur im Anime-Stil" />
     </div>
 
     <!-- Läufer: Sprite-Sheet-Animation (aufstehen + rennen, folgt nach links) -->
@@ -487,11 +538,10 @@
       <div id="curtainGl"></div>
       <div class="hero" id="cHero">
         <div class="hero__wrap">
-          <!-- Grünkohl = animiertes WebP (aus den gifski-Bildern von .claude/video/key4.py, q80, 24 fps): Bilder 0–53 hin und zurück – nur so weit, bis Blätter
-               aus dem Bild ragen würden; Form zeitlich stabil (Mehrheit über 5 Bilder), weiche Kante, deckend auf Weiß;
-               in 4 vom User markierten Bereichen (.claude/video/kale_regions.json) dunkle Stellen weiß, in 2 weiteren
-               (kale_fill.json) kleine weiße Lücken grün gefüllt, in kale_keep.json durchgehend grün -->
-          <img class="hero__kale" src="assets/img/kale.webp?v=1" width="1278" height="709" alt="" fetchpriority="high" />
+          <!-- über dem Grünkohl, mittig: Turret Road wie der SCROLL-Rahmen, klein geschrieben -->
+          <div class="hero__kicker">endless scroll page</div>
+          <!-- Grünkohl = Foto des Users (raw IMG-20200207-WA0000_inPixio.png, freigestellt, auf den Inhalt beschnitten 1383×571, WebP q95) -->
+          <img class="hero__kale" src="assets/img/kale-foto.webp?v=2" width="1383" height="571" alt="" fetchpriority="high" />
           <div class="hero__title">
             <span class="word sinc">sinc.</span><img class="re" src="assets/img/re.webp" alt="" /><span class="word moir">moir</span>
           </div>
@@ -501,8 +551,6 @@
       <svg class="scrollRing" id="scrollRing"></svg>
     </div>
 
-    <!-- alter Cursor -->
-    <div id="cursor"><img src="assets/img/cursor-jump.webp" alt=""></div>
 
     <!-- Ring zuletzt (Rand liegt vor der Mitte, Loch ist transparent) -->
     <!-- Loch-Geometrie (leer, nur zum Messen fürs JS) -->
@@ -519,7 +567,7 @@
     <!-- Endlos-Scroll: Weißblende NUR im Innenbereich (unter den Rahmen), dann Neustart am Anfang -->
     <div class="loopFade" id="loopFade"></div>
     <img class="frame frame--top"    src="assets/img/frame-houses.webp" alt="" />
-    <img class="frame frame--bottom" src="assets/img/frame-bronze.webp"   alt="" />
+    <img class="frame frame--bottom" src="assets/img/frame-bronze.webp?v=3" alt="" />
     <img class="frame frame--left"   src="assets/img/frame-flowers.webp"  alt="" />
 
     <!-- Ecken -->
@@ -527,7 +575,7 @@
     <img class="corner corner--statue"   src="assets/img/statue.webp"   alt="Statue" />
     <img class="corner corner--building" src="assets/img/building.webp" alt="Gebäude" />
     <img class="corner corner--roses"    src="assets/img/roses-vase.webp" alt="Rosen in der Vase" />
-    <div class="clink" aria-hidden="true"><img src="assets/img/glass-clink.webp" alt="" /><img src="assets/img/glass-clink.webp" alt="" /></div>
+    <div class="sip" aria-hidden="true"><img src="assets/img/glass-clink.webp" alt="" /></div>
 
     <!-- Boxsack: hängt neben dem Gebäude, pendelt nur, wenn die Maus drüberfährt (js/boxsack.js) -->
     <div class="bag" id="bag" aria-hidden="true">
@@ -666,9 +714,11 @@
   /* ============ alter Cursor (springende Figur, dreht in Bewegungsrichtung) ============ */
   (function planeCursor(){
     const cursor = document.getElementById('cursor');
-    let mx = innerWidth/2, my = innerHeight/2, lx = mx, ly = my, angle = 0;
+    const m0 = window.__nihMouse;                                       // letzte Mauslage von der Ladeseite (Klick auf „enter“)
+    let mx = m0 ? m0.x : innerWidth/2, my = m0 ? m0.y : innerHeight/2, lx = mx, ly = my, angle = 0;
     const NOSE0 = -90;
-    addEventListener('mousemove', (e)=>{ mx = e.clientX; my = e.clientY; });
+    // pointermove statt mousemove: läuft auch weiter, während GSAP Draggable das Legal-Fenster zieht (dort fallen mousemove-Ereignisse aus)
+    addEventListener('pointermove', (e)=>{ mx = e.clientX; my = e.clientY; });
     (function frame(){
       const vx = mx-lx, vy = my-ly, speed = Math.hypot(vx,vy);
       lx = mx; ly = my;
@@ -825,8 +875,11 @@
   window.__isMuted = ()=>muted;
   // Ton-Wahl von der Ladeseite (loader.html -> hier, Vorhang-Intro ist Teil dieser Seite), sessionStorage 'nihanzo-sound' = 'on' | 'off'
   let soundPref=null; try{ soundPref=sessionStorage.getItem('nihanzo-sound'); }catch(_){}
-  if(soundPref==='off' || /[?&]mute\b/.test(location.search)){ setMute(true); }   // ?mute = Testen ohne Ton
-  else if(soundPref==='on'){ ensureAudio(); try{ audioCtx && audioCtx.resume().catch(()=>{}); }catch(_){} }   // same-origin nach Klick: läuft meist sofort
+  // Gerade auf der Ladeseite gewählt (window.__nihSound, nur beim Weg über die Ladeseite gesetzt) hat VORRANG – auch vor ?mute;
+  // ?mute (Testen ohne Ton) und sessionStorage gelten nur, wenn die Startseite direkt geöffnet wird
+  const fromLoader=window.__nihSound;
+  if(fromLoader==='off' || (!fromLoader && (soundPref==='off' || /[?&]mute\b/.test(location.search)))){ setMute(true); }
+  else if(fromLoader==='on' || soundPref==='on'){ ensureAudio(); try{ audioCtx && audioCtx.resume().catch(()=>{}); }catch(_){} }   // same-origin nach Klick: läuft meist sofort
   eq.addEventListener('click', ()=>{ ensureAudio(); setMute(!muted); if(!muted) twPlayNow(); });
 
   /* ---- Sounds automatisch aus beim Verlassen der Seite / Tab wechseln ---- */
@@ -876,7 +929,8 @@
     const videoPlayer = document.getElementById('videoPlayer');
     const centerpic   = document.getElementById('centerpic');
     const cpOrig      = document.getElementById('cpOrig');
-    const cpSketch    = document.getElementById('cpSketch');
+    const cpSketch    = document.getElementById('cpSketch');   // Kasten 1: rotes Buntstift-Bild (+ Bleistift-Geräusch)
+    const cpAnime     = document.getElementById('cpAnime');    // Kasten 3: Anime-Bild (ohne Ton)
     const boxes       = ['box1','box2','box3','box4'].map(id=>document.getElementById(id));
     const eqEl        = document.getElementById('eq');
     const runner      = document.getElementById('runner');
@@ -964,7 +1018,8 @@
     const HRT_SPAN=16.0/GAL_VH;                    // Würfel-Szene: Objekte erscheinen + Kamerafahrt an ihnen vorbei bis zum Würfel
     const HRT_LEAD=0.2*PHO_SPAN;                   // davon überlappt: beginnt, während das letzte Foto verschwindet (ph 0.8..1)
     const LOOP_VH=1.6;                             // Endlos-Scroll: Weißblende nach dem Würfel, dann Sprung an den Anfang
-    window.__heart={t:0, lead:HRT_LEAD/HRT_SPAN, on:false};
+    const HRT_EARLY=0.038*PHO_SPAN;                // Figuren erscheinen bei ph 0.962 = noch 5 % des letzten Fotos über dem Bronze-Band (gemessen bei 1000×553, Band 3800×346)
+    window.__heart={t:0, lead:(HRT_LEAD-HRT_EARLY)/HRT_SPAN, on:false};
     let heartLoaded=false;
     function loadHeart(){ if(heartLoaded) return; heartLoaded=true;
       const sc=document.createElement('script'); sc.type='module'; sc.src='js/heart.js'; document.body.appendChild(sc); }
@@ -1027,13 +1082,18 @@
       go(); addEventListener('load', go, {once:true});
     })();
 
-    const P=1100, SC0=0.09, SCEND=4.30, ZBASE=SCEND/SC0;
+    const CAM_K=0.85*0.95;                                // Kamera durchgehend kleiner (−15 %, dann nochmal −5 %; Verhältnis gleich -> Kette unverändert)
+    const P=1100, SC0=0.09*CAM_K, SCEND=4.30*CAM_K, ZBASE=SCEND/SC0;
+    // Start wie früher sofort, aber weich: Tempo wächst über die ersten SLOW_A der Kamerastrecke von 0 an (SLOW_D = SLOW_A/2
+    // -> Anfangstempo 0, danach gleichmäßig, Ende unverändert: slowStart(1) = 1)
+    const SLOW_A=0.22, SLOW_D=SLOW_A/2;
+    const slowStart=(p)=>{ const u=Math.min(p/SLOW_A,1); return (p - SLOW_D*(1-(1-u)*(1-u)))/(1-SLOW_D); };
     const CUT=0.80;   // Auslöser-Moment = harter Schnitt: Kamera + Kette weg, Video im Loch da
 
     function applyCamera(p){
       // EIN gemeinsamer exponentieller Zoom-Faktor: Kette und Kamera wachsen im festen Verhältnis (gleichmäßig wirkend)
       const Z = Math.pow(ZBASE, p);
-      typer.style.opacity = String(1 - cl(p/0.09,0,1));
+      typer.style.opacity = String(1 - cl((p-0.03)/0.09,0,1));   // „enjoy your scroll“ blendet erst etwas später aus
       const cut = p>=CUT;                                   // Auslöser = harter Schnitt aufs Video
       // Kette: 2D-Zoom um das Kettenloch = exakt die frühere Perspektiv-Projektion (translateZ), ohne 3D-Kontext
       chainWrap.style.transform = `translate(${SG.chTx.toFixed(1)}px,${SG.chTy.toFixed(1)}px) scale(${(Z/CH_K).toFixed(5)})`;
@@ -1173,19 +1233,17 @@
       const trainX = innerWidth + (-(4*Wc) - innerWidth)*tt;   // linke Kante von box1
       for(let i=0;i<4;i++){ boxes[i].style.transform = `translate(${(trainX+i*Wc).toFixed(1)}px,-50%)`; }
 
-      // --- Skizze (Hover) nur dort, wo ein Skizzen-Kasten (box1/box3) das Motiv überdeckt ---
+      // --- Wo ein Kasten das Motiv überdeckt, zeigt es eine andere Fassung: Kasten 1 = rotes Buntstift-Bild, Kasten 3 = Anime
+      //     (Kasten 2 + 4 = Original); jede Fassung nur als Band unter ihrem Kasten ---
       const Lc=CX-FIG*Wc/2, Rc=CX+FIG*Wc/2;   // sichtbare Motivkanten
-      let bandL=null, bandR=null;
-      for(const i of [0,2]){
-        const bxL=trainX+i*Wc, bxR=bxL+Wc;
-        const oL=Math.max(bxL,Lc), oR=Math.min(bxR,Rc);
-        if(oR>oL){ bandL=oL; bandR=oR; }
-      }
-      if(bandL===null){ cpSketch.style.clipPath='inset(0 100% 0 0)'; }
-      else{ cpSketch.style.clipPath = `inset(0 ${(Math.max(0,Rc-bandR)/FIG).toFixed(1)}px 0 ${(Math.max(0,bandL-Lc)/FIG).toFixed(1)}px)`; }   // /FIG: Clip wirkt vor dem scale()
-      // Bleistift-Geräusch nur, solange die Skizze zu sehen ist UND der nächste Kasten noch nicht wieder das Original zeigt
-      // (Band reicht bis zur rechten Motivkante; sobald der folgende Original-Kasten rechts hereinkommt -> sofort aus)
-      const sketchOn = bandL!==null && (bandR-bandL)>4 && bandR>=Rc-0.5 && parseFloat(centerpic.style.opacity||'0')>0.5;
+      const band=(i)=>{ const bxL=trainX+i*Wc, oL=Math.max(bxL,Lc), oR=Math.min(bxL+Wc,Rc); return oR>oL ? [oL,oR] : null; };
+      const clipTo=(el,b)=>{ el.style.clipPath = b ? `inset(0 ${(Math.max(0,Rc-b[1])/FIG).toFixed(1)}px 0 ${(Math.max(0,b[0]-Lc)/FIG).toFixed(1)}px)`
+                                                     : 'inset(0 100% 0 0)'; };   // /FIG: Clip wirkt vor dem scale()
+      const b1=band(0), b3=band(2); clipTo(cpSketch,b1); clipTo(cpAnime,b3);
+      // Bleistift-Geräusch nur beim Buntstift-Bild (Kasten 1), solange es zu sehen ist UND der nächste Kasten noch nicht wieder
+      // das Original zeigt (Band reicht bis zur rechten Motivkante; kommt der Original-Kasten rechts herein -> sofort aus).
+      // Das Anime-Bild (Kasten 3) bleibt stumm.
+      const sketchOn = b1!==null && (b1[1]-b1[0])>4 && b1[1]>=Rc-0.5 && parseFloat(centerpic.style.opacity||'0')>0.5;
       if(sketchOn!==pencilOn){ pencilOn=sketchOn; if(window.pencilSound) pencilSound(sketchOn); }
 
       // --- Läufer-Daumenkino: scroll-gescrubbt Frame 0..53 (sitzen -> aufstehen -> nach links rausrennen).
@@ -1264,9 +1322,10 @@
       // --- Würfel-Szene (js/heart.js): beginnt, während das letzte Foto verschwindet (liegt dann noch darüber) ---
       const HRT_START = PHO_START + PHO_SPAN - HRT_LEAD;
       if(g > GLASS_START+GLASS_SPAN) loadHeart();                      // während Karussell/Fotos vorladen
-      // Hintergrund -> Weiß, während das letzte Foto unten rausfährt (ph 0.88..0.98); erst wenn alles weiß ist, kommt die
-      // Würfel-Szene (nur weiße Rückwand) -> kein Sprung. Ihre Objekte erscheinen ohnehin erst ab t = lead (= ph 1)
-      const wht = pc<CUT ? 0 : smooth(cl((g-(PHO_START+0.88*PHO_SPAN))/(0.1*PHO_SPAN),0,1));
+      // Hintergrund -> Weiß, während das letzte Foto rausfährt (ph 0.852..0.952); erst wenn alles weiß ist, kommt die
+      // Würfel-Szene (nur weiße Rückwand) -> kein Sprung. Ihre Objekte erscheinen ab t = lead (= ph 0.962, HRT_EARLY),
+      // das letzte Foto liegt dann noch mit ~5 % darüber und fährt weiter raus
+      const wht = pc<CUT ? 0 : smooth(cl((g-(PHO_START+0.852*PHO_SPAN))/(0.1*PHO_SPAN),0,1));
       bgWhite.style.opacity = wht.toFixed(3);
       window.__heart.on = pc>=CUT && g>=HRT_START && wht>=0.999;     // Einblenden macht heart.js selbst (erst mit frischem Bild)
       window.__heart.t = cl((g-HRT_START)/HRT_SPAN,0,1);
@@ -1410,7 +1469,7 @@
     (function loop(){
       curP += (targetP-curP)*0.09; if(Math.abs(targetP-curP)<1e-5) curP=targetP; if(curP<0)curP=0;
       if(!glassLoaded && curP>=F*0.97) loadGlass();
-      const pc = cl(curP/F,0,1);
+      const pc = slowStart(cl(curP/F,0,1));
       const g  = cl((curP-F)/(1-F),0,1);
       applyCamera(pc);
       applyGallery(pc,g);
@@ -1551,6 +1610,149 @@
       }
       requestAnimationFrame(frame);
     })(performance.now());
+  })();
+</script>
+<!-- ============ Legal notice: Link unten rechts -> verschiebbares Mac-Browserfenster (GSAP Draggable), Inhalt scrollt für sich ============ -->
+<a class="legalLink" id="legalLink" href="#legal" aria-controls="legalWin">legal notice</a>
+<div class="legalWin" id="legalWin" role="dialog" aria-label="Impressum und Datenschutz" hidden>
+  <div class="lw__bar">
+    <div class="lw__lights">
+      <button type="button" class="lw__light lw__close" id="legalClose" aria-label="Schließen"><svg viewBox="0 0 6 6" aria-hidden="true"><path d="M.8.8l4.4 4.4M5.2.8L.8 5.2"/></svg></button>
+      <span class="lw__light lw__min" aria-hidden="true"></span>
+      <span class="lw__light lw__max" aria-hidden="true"></span>
+    </div>
+    <div class="lw__url" aria-hidden="true">
+      <svg viewBox="0 0 9 11"><path d="M2 4.5V3a2.5 2.5 0 0 1 5 0v1.5h.6c.5 0 .9.4.9.9v4.7c0 .5-.4.9-.9.9H1.4c-.5 0-.9-.4-.9-.9V5.4c0-.5.4-.9.9-.9H2zm1.2 0h2.6V3a1.3 1.3 0 0 0-2.6 0v1.5z"/></svg>
+      <span>https://</span>legalnotice.com
+    </div>
+  </div>
+  <div class="lw__body" id="legalBody" tabindex="0">
+    <h1>Impressum</h1>
+    <p>Angaben gemäß § 5 DDG</p>
+    <p>Name des Inhabers: Nils Rattke<br>
+       Anschrift: Flemmingstraße 15, 04177 Leipzig<br>
+       E-Mail: <a href="mailto:nihanzo@web.de">nihanzo@web.de</a></p>
+    <p>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: Nils Rattke, Anschrift wie oben</p>
+
+    <hr>
+    <h1 style="margin-top:28px">Datenschutzerklärung</h1>
+
+    <h2>1. Verantwortlicher</h2>
+    <p>Verantwortlich für die Datenverarbeitung auf dieser Website im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>
+    <p>Nils Rattke<br>Flemmingstraße 15, 04177 Leipzig<br>E-Mail: <a href="mailto:nihanzo@web.de">nihanzo@web.de</a></p>
+
+    <h2>2. Überblick</h2>
+    <p>Diese Website ist ein persönliches Portfolio. Sie kommt ohne Kontaktformular, Nutzerkonto, Newsletter, Werbung,
+       Analyse- oder Tracking-Werkzeuge aus und setzt keine Cookies. Alle Schriften, Skripte, Bilder und Videos werden
+       direkt vom Server dieser Website geladen; Inhalte von Drittanbietern (z.&nbsp;B. Google Fonts, YouTube, Social-Media-Plugins)
+       sind nicht eingebunden. Personenbezogene Daten werden nur in dem unten beschriebenen, technisch notwendigen Umfang verarbeitet.</p>
+
+    <h2>3. Hosting über GitHub Pages</h2>
+    <p>Diese Website wird bei GitHub Pages gehostet. Anbieter ist die GitHub, Inc., 88 Colin P. Kelly Jr. Street,
+       San Francisco, CA 94107, USA (ein Unternehmen der Microsoft Corporation).</p>
+    <p>Beim Aufruf der Website übermittelt Ihr Browser automatisch Daten an den Server von GitHub, die dort in
+       Server-Logdateien gespeichert werden können. Dazu gehören insbesondere:</p>
+    <ul>
+      <li>IP-Adresse,</li>
+      <li>Datum und Uhrzeit der Anfrage,</li>
+      <li>aufgerufene Datei bzw. Seite und übertragene Datenmenge,</li>
+      <li>Referrer-URL (die zuvor besuchte Seite),</li>
+      <li>verwendeter Browser und Betriebssystem.</li>
+    </ul>
+    <p>Diese Daten werden benötigt, um die Website auszuliefern sowie ihre Stabilität und Sicherheit zu gewährleisten
+       (z.&nbsp;B. Abwehr von Angriffen). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; das berechtigte Interesse liegt in der
+       sicheren und zuverlässigen Bereitstellung dieser Website. Eine Zusammenführung mit anderen Datenquellen findet durch
+       mich nicht statt; ich habe keinen Zugriff auf die Logdateien von GitHub.</p>
+    <p>Dabei kann eine Übermittlung von Daten in die USA stattfinden. GitHub ist nach dem EU-US Data Privacy Framework
+       zertifiziert; für zertifizierte Unternehmen hat die EU-Kommission ein angemessenes Datenschutzniveau festgestellt
+       (Angemessenheitsbeschluss vom 10.&nbsp;Juli 2023, Art. 45 DSGVO). Wie lange GitHub die Daten speichert, richtet sich nach
+       der Datenschutzerklärung von GitHub:
+       <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub General Privacy Statement</a>.</p>
+
+    <h2>4. Lokal im Browser gespeicherte Einstellung</h2>
+    <p>Wenn Sie auf der Startseite „enter with sound“ oder „enter without sound“ wählen, wird diese Auswahl im
+       Sitzungsspeicher (sessionStorage) Ihres Browsers abgelegt, damit die Seite den Ton entsprechend ein- oder ausschaltet.
+       Die Angabe verlässt Ihr Gerät nicht, wird nicht an einen Server übertragen und beim Schließen des Tabs automatisch gelöscht.
+       Rechtsgrundlage ist § 25 Abs. 2 Nr. 2 TDDDG (unbedingt erforderlich für den von Ihnen gewünschten Dienst).</p>
+
+    <h2>5. Kontakt per E-Mail</h2>
+    <p>Wenn Sie mir eine E-Mail schreiben, verarbeite ich Ihre Angaben (E-Mail-Adresse, Name, Inhalt der Nachricht), um Ihre
+       Anfrage zu beantworten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, sofern Ihre Anfrage mit einem Vertrag oder
+       dessen Anbahnung zusammenhängt, im Übrigen Art. 6 Abs. 1 lit. f DSGVO (Interesse an der Beantwortung von Anfragen).
+       Die Daten werden gelöscht, sobald die Anfrage abschließend bearbeitet ist und keine gesetzlichen Aufbewahrungspflichten
+       entgegenstehen.</p>
+
+    <h2>6. SSL-/TLS-Verschlüsselung</h2>
+    <p>Diese Website wird über eine verschlüsselte Verbindung (HTTPS) ausgeliefert. Sie erkennen das am Schloss-Symbol und an
+       „https://“ in der Adresszeile Ihres Browsers.</p>
+
+    <h2>7. Links zu anderen Websites</h2>
+    <p>Diese Website kann Links zu Angeboten anderer Anbieter enthalten. Erst wenn Sie einen solchen Link anklicken, werden Daten
+       an den jeweiligen Anbieter übertragen; dort gelten dessen Datenschutzbestimmungen.</p>
+
+    <h2>8. Ihre Rechte</h2>
+    <p>Sie haben im Rahmen der gesetzlichen Vorgaben jederzeit das Recht auf</p>
+    <ul>
+      <li>Auskunft über die zu Ihrer Person gespeicherten Daten (Art. 15 DSGVO),</li>
+      <li>Berichtigung unrichtiger Daten (Art. 16 DSGVO),</li>
+      <li>Löschung (Art. 17 DSGVO),</li>
+      <li>Einschränkung der Verarbeitung (Art. 18 DSGVO),</li>
+      <li>Datenübertragbarkeit (Art. 20 DSGVO),</li>
+      <li>Widerspruch gegen Verarbeitungen, die auf Art. 6 Abs. 1 lit. f DSGVO beruhen (Art. 21 DSGVO).</li>
+    </ul>
+    <p>Wenden Sie sich dazu einfach an die oben genannte Adresse. Außerdem haben Sie das Recht, sich bei einer
+       Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO). Zuständig ist z.&nbsp;B. die Sächsische Datenschutz- und
+       Transparenzbeauftragte, Devrientstraße 5, 01067 Dresden,
+       <a href="https://www.datenschutz.sachsen.de" target="_blank" rel="noopener">www.datenschutz.sachsen.de</a>.</p>
+
+    <h2>9. Pflicht zur Bereitstellung, automatisierte Entscheidungen</h2>
+    <p>Sie sind nicht verpflichtet, personenbezogene Daten bereitzustellen; ohne die technisch notwendigen Verbindungsdaten
+       kann die Website jedoch nicht angezeigt werden. Eine automatisierte Entscheidungsfindung einschließlich Profiling
+       findet nicht statt.</p>
+
+    <p class="lw__small" style="margin-top:26px">Stand: Oktober 2026</p>
+  </div>
+</div>
+<script>
+  /* ============ Legal notice: Fenster öffnen/schließen, ziehen (GSAP Draggable, erst beim ersten Bedarf geladen) ============ */
+  (function legalNotice(){
+    const link=document.getElementById('legalLink'), win=document.getElementById('legalWin'),
+          body=document.getElementById('legalBody'), close=document.getElementById('legalClose'), bar=win.querySelector('.lw__bar');
+    const load=(src)=>new Promise((ok,no)=>{ const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=no; document.head.appendChild(s); });
+    let ready=null, drag=null, open=false;
+    const ensure=()=> ready || (ready=(window.gsap ? Promise.resolve() : load('js/vendor/gsap.min.js'))
+      .then(()=> window.Draggable ? 0 : load('js/vendor/Draggable.min.js')).then(()=>{ gsap.registerPlugin(Draggable); }));
+    link.addEventListener('pointerenter', ()=>{ ensure().catch(()=>{}); }, {once:true});   // beim Hovern schon vorladen
+    // Grenzen = Bildschirm (Fenster bleibt ganz sichtbar); x/y sind Verschiebungen ab der Startlage unten rechts
+    const bounds=()=>{ const l=win.offsetLeft, t=win.offsetTop;
+      return { minX:-l, maxX:innerWidth-l-win.offsetWidth, minY:-t, maxY:innerHeight-t-win.offsetHeight }; };
+    function show(e){
+      if(e) e.preventDefault();
+      ensure().then(()=>{
+        if(open) return; open=true; win.hidden=false; body.scrollTop=0;
+        if(!drag) drag=Draggable.create(win,{ type:'x,y', trigger:bar, bounds:bounds(), zIndexBoost:false,
+          onPress(){ this.applyBounds(bounds()); } })[0];
+        gsap.killTweensOf(win);
+        gsap.fromTo(win,{ x:0, y:22, scale:.94, opacity:0, transformOrigin:'100% 100%' },
+                        { y:0, scale:1, opacity:1, duration:.35, ease:'power3.out', onComplete:()=>drag.update() });
+        close.focus({ preventScroll:true });
+      }).catch(()=>{ win.hidden=false; open=true; });             // ohne GSAP: Fenster trotzdem zeigen (dann nicht ziehbar)
+    }
+    function hide(){
+      if(!open) return; open=false;
+      if(!window.gsap){ win.hidden=true; return; }
+      gsap.killTweensOf(win);
+      gsap.to(win,{ scale:.94, opacity:0, duration:.2, ease:'power2.in', transformOrigin:'50% 50%', onComplete:()=>{ win.hidden=true; } });
+    }
+    link.addEventListener('click', show);
+    close.addEventListener('click', hide);
+    addEventListener('keydown', e=>{ if(e.key==='Escape' && open) hide(); });
+    // Mausrad/Tasten im Fenster gehören dem Fenster: nicht an die Seite (Scroll-Schleife, Sprünge) weitergeben;
+    // über der Titelleiste scrollt auch die Seite nicht mit
+    win.addEventListener('wheel', e=>{ e.stopPropagation(); if(!body.contains(e.target)) e.preventDefault(); }, { passive:false });
+    win.addEventListener('keydown', e=>{ if(e.key!=='Escape') e.stopPropagation(); });
+    win.addEventListener('touchmove', e=>e.stopPropagation(), { passive:true });
+    addEventListener('resize', ()=>{ if(open && drag){ drag.applyBounds(bounds()); } });
   })();
 </script>
 <script src="js/boxsack.js"></script>

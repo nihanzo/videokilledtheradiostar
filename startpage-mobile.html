@@ -10,8 +10,9 @@
 <link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
 <link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
 <!-- SCROLL-Rahmen im Vorhang: Turret Road 300 (eckige 2000er-Blockschrift, dünn) -->
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Turret+Road:wght@300&display=swap" media="print" onload="this.media='all'" />
+<!-- lokal statt Google Fonts (keine IP-Übermittlung an Google, DSGVO) -->
+<link rel="preload" href="assets/fonts/turret-road/TurretRoad-Light-latin.woff2" as="font" type="font/woff2" crossorigin />
+<style>@font-face{ font-family:'Turret Road'; font-style:normal; font-weight:300; font-display:swap; src:url('assets/fonts/turret-road/TurretRoad-Light-latin.woff2') format('woff2'); }</style>
 <title>nihanzo — startseite (handy)</title>
 <!-- Hintergrund-Varianten: Standard = Glas-Foto (warm) in der Mitte; ?bg=grau (Glas-Foto blau-grau) · ?bg=senf (Senf-Verlauf) · ?bg=kugeln (Kugel-Tunnel, voll) -->
 <script>{ const b = new URLSearchParams(location.search).get('bg'); if(['senf','kugeln','grau'].includes(b)) document.documentElement.classList.add('bg-'+b); }</script>
@@ -82,7 +83,7 @@
   .bgPic{ position:absolute; pointer-events:none; opacity:.75;
     left:calc(var(--flowIn) - var(--flowDip)); right:0;
     top:calc(var(--topReach) * 0.2);   /* höchste Lücke zwischen den kopfüber hängenden Häusern (gemessen ≈ 21 %) */
-    bottom:calc((100vw - var(--flowIn) + var(--flowDip)) * 403 / 3800 * 0.93);
+    bottom:calc((100vw - var(--flowIn) + var(--flowDip)) * 346 / 3800 * 0.93);
     background:url(assets/img/bg-glas.webp) center / cover no-repeat; overflow:hidden; }
   /* leichte Film-Körnung über dem Senf-Bild (grain.webp = nahtlose 320er-Kachel, helle + dunkle Körner mit Alpha);
      springt 5× pro Sekunde an eine andere Stelle (nur transform -> kein Neuzeichnen) */
@@ -556,7 +557,7 @@
     <!-- Endlos-Scroll: Weißblende NUR im Innenbereich (unter den Rahmen), dann Neustart am Anfang -->
     <div class="loopFade" id="loopFade"></div>
     <img class="frame frame--top"    src="assets/img/frame-houses.webp" alt="" />
-    <img class="frame frame--bottom" src="assets/img/frame-bronze.webp"   alt="" />
+    <img class="frame frame--bottom" src="assets/img/frame-bronze.webp?v=3" alt="" />
     <div class="frame frame--left"><img src="assets/img/frame-flowers.webp" alt="" /><img src="assets/img/frame-flowers.webp" alt="" /><img src="assets/img/frame-flowers.webp" alt="" /></div>
 
     <!-- Ecken -->
@@ -862,8 +863,11 @@
   window.__isMuted = ()=>muted;
   // Ton-Wahl von der Ladeseite (loader.html -> hier, Vorhang-Intro ist Teil dieser Seite), sessionStorage 'nihanzo-sound' = 'on' | 'off'
   let soundPref=null; try{ soundPref=sessionStorage.getItem('nihanzo-sound'); }catch(_){}
-  if(soundPref==='off' || /[?&]mute\b/.test(location.search)){ setMute(true); }   // ?mute = Testen ohne Ton
-  else if(soundPref==='on'){ ensureAudio(); try{ audioCtx && audioCtx.resume().catch(()=>{}); }catch(_){} }   // same-origin nach Klick: läuft meist sofort
+  // Gerade auf der Ladeseite gewählt (window.__nihSound, nur beim Weg über die Ladeseite gesetzt) hat VORRANG – auch vor ?mute;
+  // ?mute (Testen ohne Ton) und sessionStorage gelten nur, wenn die Startseite direkt geöffnet wird
+  const fromLoader=window.__nihSound;
+  if(fromLoader==='off' || (!fromLoader && (soundPref==='off' || /[?&]mute\b/.test(location.search)))){ setMute(true); }
+  else if(fromLoader==='on' || soundPref==='on'){ ensureAudio(); try{ audioCtx && audioCtx.resume().catch(()=>{}); }catch(_){} }   // same-origin nach Klick: läuft meist sofort
   eq.addEventListener('click', ()=>{ ensureAudio(); setMute(!muted); if(!muted) twPlayNow(); });
 
   /* ---- Sounds automatisch aus beim Verlassen der Seite / Tab wechseln ---- */

@@ -7,7 +7,7 @@ let W = first.width, H = first.height
 try? FileManager.default.removeItem(at: out)
 let writer = try! AVAssetWriter(outputURL: out, fileType: .mp4)
 let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: W, AVVideoHeightKey: H,
-  AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 5_000_000, AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel, AVVideoMaxKeyFrameIntervalKey: 24]])
+  AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: CommandLine.arguments.count > 3 ? Int(CommandLine.arguments[3])! : 5_000_000, AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel, AVVideoMaxKeyFrameIntervalKey: 24]])
 let ad = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB, kCVPixelBufferWidthKey as String: W, kCVPixelBufferHeightKey as String: H])
 writer.add(input); writer.startWriting(); writer.startSession(atSourceTime: .zero)
 for (i, f) in files.enumerated() {

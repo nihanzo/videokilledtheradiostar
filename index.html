@@ -8,74 +8,48 @@
 <link rel="icon" href="data:," />   <!-- kein favicon.ico-Abruf (sonst 404) -->
 <link rel="preload" href="assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4" as="font" type="font/ttf" crossorigin />
 <title>nihanzo</title>
-<!-- Schrift des SCROLL-Rahmens (Vorhang der Startseite) schon hier holen: dann liegt sie im Cache, wenn der Vorhang erscheint -->
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Turret+Road:wght@300&display=swap" media="print"
-      onload="this.media='all'; try{ document.fonts.load('300 20px \'Turret Road\'', 'SCROLL'); }catch(_){}" />
+<!-- Schrift des SCROLL-Rahmens (Vorhang der Startseite) schon hier holen: dann liegt sie im Cache, wenn der Vorhang erscheint.
+     LOKAL (Turret Road 300, latin, OFL) statt Google Fonts -> keine IP-Übermittlung an Google (DSGVO) -->
+<link rel="preload" href="assets/fonts/turret-road/TurretRoad-Light-latin.woff2" as="font" type="font/woff2" crossorigin />
 <script src="js/device.js"></script>   <!-- NIH_PAGE = startpage.html oder startpage-mobile.html (Handy) -->
 <!--
-  LADESEITE – weißer Hintergrund
-   1. Gans aus Kreuzen (assets/img/goose-body.webp + goose-wing-far/-near.webp, leichter Flügelschlag) gleitet von unten rechts diagonal nach oben links raus
-      (leicht in Flugrichtung gedreht, GOOSE_ROT). Hinter ihr: Kirchkreuze als Schleier -> Fluglinie bis in die Ecke.
-   2. Die Skulptur (assets/img/madonna.webp) erscheint SCHRÄG DIREKT HINTER der Gans Stück für Stück
-      (diagonale Maske, deren Kante dem Schwanz der Gans folgt). Die Kreuzlinie ist im Bereich des Bildes unterbrochen.
-   3. Danach schießt eine Linie aus dem Auge der Mutter schräg nach oben rechts und schreibt schnell
-      „believe the story" (#6F798F, Nihanzo Grotesk); dann zieht sich die Linie zurück.
-   4. Silberne Powerbank (reines CSS nach Produktfoto, hochkant) rechts unter dem Text lädt 0 -> 100 %;
-      bei 100 % erscheinen direkt an der Unterkante der Figur die Sound-Buttons (gleiche Breite wie die Bronze-Kante).
-   5. Schwarzes USB-C-Kabel (SVG): hängt von der Powerbank rechts an der Figur vorbei herunter und steckt mit dem
-      USB-C-Stecker seitlich im rechten Button („enter without sound").
+  LADESEITE – weißer Hintergrund, nur drei Dinge:
+   1. Silberne Powerbank (reines CSS nach Produktfoto, hochkant), mittig im oberen Drittel, lädt 0 -> 100 %
+      (= echter Ladestand der Startseite, mindestens DURATION lang).
+   2. Schwarzes, geflochtenes USB-C-Kabel (SVG, Stecker nach Foto-Vorlage) wächst WÄHREND des Ladens aus dem linken Port (USB-C-Buchse) nach unten; der Stecker sitzt an
+      der Spitze und steckt bei 100 % von oben mittig in den Sound-Buttons (Metallspitze verschwindet unter der Button-Kante).
+   3. Sound-Buttons mittig weiter unten: während des Ladens blass und nicht klickbar; sobald das Kabel ankommt, bekommen sie
+      die Rosenfarbe und rundherum (auch unten) geht ein schwarzes Feuerwerk los (kurze Raketen nach außen, zerplatzen schnell, die Funken sinken
+      danach zu Boden, gleiten dort aus und verglühen erst dann; nur außerhalb der Buttons).
 -->
 <style>
   @font-face{ font-family:'Nihanzo Grotesk'; src:url('assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4') format('truetype');
     font-weight:100 900; font-display:swap; }   /* eine Stärke für alle Gewichte -> kein künstliches Fettmachen */
-  :root{ --olive:#798816; --say:#6F798F; --font:'Nihanzo Grotesk',system-ui,sans-serif; }   /* --say = Farbe aller Schrift */
+  :root{ --rose:#7A3524; --say:#6F798F; --font:'Nihanzo Grotesk',system-ui,sans-serif; }   /* --say = Farbe aller Schrift */
   *{ margin:0; padding:0; box-sizing:border-box; }
   html,body{ height:100%; overscroll-behavior:none; }   /* kein Gummiband am Seitenrand (Mac-Trackpad: Seite rutscht sonst kurz mit), kein Wischen zur vorigen Seite */
   body{ background:#fff; overflow:hidden; font-family:var(--font); font-weight:800; text-transform:lowercase; }   /* alles klein */
 
-  #trail{ position:fixed; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; }
-
-  /* Skulptur: Sichtbarkeit nur über die diagonale Maske (per JS), Unterkante scharf */
-  .mad{ position:fixed; left:0; top:0; z-index:3; pointer-events:none;
-    -webkit-mask-image:linear-gradient(transparent,transparent); mask-image:linear-gradient(transparent,transparent); }
-  .mad img{ display:block; width:100%; height:100%; }
-
-  /* Linie aus dem Auge + geschriebener Satz */
-  #beam{ position:fixed; inset:0; width:100%; height:100%; z-index:5; pointer-events:none; overflow:visible; }
-  .say{ position:fixed; left:0; top:0; z-index:5; white-space:nowrap; color:var(--say); letter-spacing:.02em;
-    line-height:1; pointer-events:none; clip-path:inset(-20% 100% -20% 0); }
+  #fx{ position:fixed; inset:0; width:100%; height:100%; z-index:9; pointer-events:none; }   /* Feuerwerk */
 
   /* USB-C-Kabel (z4): Powerbank (z7) und Buttons (z7) decken die Metallspitzen ab -> Stecker wirken eingesteckt */
-  .cable{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
-  #cableFront{ z-index:4; }
-  .cable .c0{ fill:none; stroke:#0f0f11; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
-  .cable .c1{ fill:none; stroke:#56565c; stroke-width:.9; stroke-linecap:round; stroke-linejoin:round; transform:translate(-.7px,-.9px); }
-  .plug{ opacity:0; }                                      /* Deckkraft setzt das JS synchron zum Zeichnen des Kabels */
+  .cable{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:4; }
+  .cable .c0{ fill:none; stroke:#141416; stroke-linecap:butt; stroke-linejoin:round; }   /* gerade Enden (stecken im Hals) */
+  .cable .cbraid{ fill:none; stroke:#3b3b42; stroke-width:.75px; stroke-linecap:round; opacity:.9; }   /* Flechtmuster */
+  .cable .c1{ fill:none; stroke:#77777e; stroke-linecap:butt; stroke-linejoin:round; opacity:.35; }   /* Glanzlinie (Rundung) */
+  .cable--top{ z-index:8; }                                    /* Stecker oben liegt vor der Powerbank */
+  .plug{ opacity:0; }
 
-  /* Gans */
-  #goose{ position:fixed; left:0; top:0; z-index:6; pointer-events:none; will-change:transform; display:block; aspect-ratio:1200/815; }
-  #goose img{ position:absolute; inset:0; width:100%; height:100%; display:block; }
-  /* Flügelschlag: jeder Flügel wird senkrecht zu seiner Ansatzlinie gestaucht (rotate·scaleY·rotate zurück) –
-     die Ansatzlinie selbst bleibt stehen, daher kein Riss zum Körper. Ursprung = Punkt auf der Linie (Bildpx/1200×815) */
-  #goose .wing-near{ transform-origin:52.667% 60.982%; animation:flapNear 1.1s ease-in-out infinite; }   /* Linie (632,497)->(905,600) */
-  #goose .wing-far{ transform-origin:24.167% 46.012%; animation:flapFar 1.1s ease-in-out infinite; }     /* Linie (290,375)->(455,352) */
-  @keyframes flapNear{ 0%,100%{ transform:rotate(20.67deg) scaleY(1.02) rotate(-20.67deg); }
-                       50%{ transform:rotate(20.67deg) scaleY(.88) rotate(-20.67deg); } }
-  @keyframes flapFar{ 0%,100%{ transform:rotate(-7.94deg) scaleY(1.02) rotate(7.94deg); }
-                      50%{ transform:rotate(-7.94deg) scaleY(.88) rotate(7.94deg); } }
-
-  /* Sound-Buttons: direkt an der Unterkante der Figur, so breit wie die Bronze-Kante; Farbe/Hover wie die Kreuze */
-  .enter{ position:fixed; z-index:7; display:flex; opacity:0; visibility:hidden; transform:translateY(6px);
-    transition:opacity .5s ease, transform .5s ease, visibility 0s linear .5s; }
-  .enter.show{ opacity:1; visibility:visible; transform:none; transition:opacity .5s ease, transform .5s ease; }
+  /* Sound-Buttons: mittig weiter unten, größer; blass bis das Kabel ankommt (.ready), dann Rand/Hover in der Rosenfarbe */
+  .enter{ position:fixed; z-index:7; display:flex; }
   .enter button{ flex:1 1 50%; min-width:0; font-family:var(--font); font-weight:inherit; font-size:inherit; letter-spacing:.03em;
-    text-transform:lowercase; white-space:nowrap; color:var(--say); background:#fff; border:2.3px solid var(--olive);
-    padding:8px 8px; cursor:pointer; transition:background .25s ease, color .25s ease;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; line-height:1.1; }
+    text-transform:lowercase; white-space:nowrap; color:#c2c4c9; background:#fff; border:2.6px solid #dadbd6;
+    padding:.95em 1em; pointer-events:none; transition:background .25s ease, color .6s ease, border-color .6s ease;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; line-height:1.1; }
   .enter button + button{ border-left:0; }                       /* kein Platz dazwischen, keine doppelte Linie */
-  .enter button small{ font-size:.82em; opacity:.85; }
-  .enter button:hover, .enter button:focus-visible{ background:var(--olive); color:#fff; outline:none; }
+  .enter button small{ font-size:.8em; opacity:.85; }
+  .enter.ready button{ color:var(--say); border-color:var(--rose); pointer-events:auto; cursor:pointer; }   /* Farbe der Rosen (Startseite rechts) */
+  .enter.ready button:hover, .enter.ready button:focus-visible{ background:var(--rose); color:#fff; outline:none; }
 
   /* Powerbank (SILBER, hochkant) – nach Produktfoto: Riffelung in dunklerem Silber, glattes Band unten mit
      rundem schwarzem Display, Ports an der Unterkante; Dicke = gestufte Kante nach unten rechts */
@@ -105,35 +79,44 @@
   .pb__ports{ position:absolute; left:0; right:0; top:100%; height:3px; transform:skewX(45deg); transform-origin:0 0; }
   .pb__ports i{ position:absolute; top:.6px; height:1.8px; border-radius:1px; background:#2a2c2f;
     box-shadow:inset 0 0 0 .6px #6d7176; }
-  .pb__ports i:nth-child(1){ left:18%; width:10px; }
+  .pb__ports i:nth-child(1){ left:18%; width:10px; height:2.2px; top:.4px; border-radius:1.1px; background:#0d0d0f;   /* USB-C: abgerundet */
+    box-shadow:inset 0 0 0 .5px #6d7176; }
+  .pb__ports i:nth-child(1)::after{ content:''; position:absolute; left:22%; right:22%; top:50%; height:.6px; margin-top:-.3px;
+    border-radius:.3px; background:#9aa0a6; }   /* Kontaktzunge in der Mitte */
   .pb__ports i:nth-child(2){ left:40%; width:13px; background:#e8891f; box-shadow:inset 0 0 0 .6px #7a3f05; }
   .pb__ports i:nth-child(3){ left:66%; width:10px; }
 </style>
 </head>
 <body>
-  <canvas id="trail"></canvas>
+  <canvas id="fx"></canvas>
 
-  <div class="mad" id="mad">
-    <img src="assets/img/madonna.webp" alt="Bronzeskulptur: Mutter und Kind blicken nach oben" />
-  </div>
-
-  <svg class="cable" id="cableFront" aria-hidden="true">
-    <g id="segA"><path class="c0"/><path class="c1"/></g>
-    <!-- Stecker oben: im linken USB-C-Port der Powerbank; unten: seitlich im rechten Button (Spitze zeigt nach links) -->
-    <g class="plug" id="plugTop"><rect id="plugTopBody" width="8" height="15" rx="2.2" fill="#141416"/></g>
-    <g class="plug" id="plugEnd"><clipPath id="plugClip"><rect id="plugClipR" x="17" y="-6" width="0" height="12"/></clipPath>
-      <g clip-path="url(#plugClip)"><rect x="-5" y="-3" width="6" height="6" rx="1.6" fill="#c9cdd2" stroke="#8d9297" stroke-width=".6"/>
-      <rect x="0" y="-4.25" width="16" height="8.5" rx="2.4" fill="#141416"/></g></g>
+  <svg class="cable" id="cable" aria-hidden="true">
+    <defs>
+      <!-- USB-C-Stecker nach Foto-Vorlage des Users (geflochtenes Kabel; Marken-Logo bewusst weggelassen). Einheit u, Ursprung =
+           Übergang Kabel/Hals, +y zeigt zur Steckerspitze: Hals 0–10.4 (6u, weitet sich zum Gehäuse), Gehäuse 10.2–28.1 (12 breit,
+           matt schwarz, Ecken nur leicht gerundet), helle Kante am Übergang, Metallhülse 28–35.6 (8.8 breit, silber-beige, fast eckig) -->
+      <linearGradient id="plugBody" x1="0" x2="1"><stop offset="0" stop-color="#2b2b2f"/><stop offset=".16" stop-color="#151517"/>
+        <stop offset=".55" stop-color="#0e0e10"/><stop offset=".88" stop-color="#151517"/><stop offset="1" stop-color="#26262a"/></linearGradient>
+      <linearGradient id="plugShell" x1="0" x2="1"><stop offset="0" stop-color="#a39f96"/><stop offset=".2" stop-color="#d6d3cb"/>
+        <stop offset=".45" stop-color="#f2f0eb"/><stop offset=".72" stop-color="#d1cec5"/><stop offset="1" stop-color="#9b988f"/></linearGradient>
+      <g id="usbc">
+        <path d="M-3 -0.6 H3 V5.2 C3 7.9 3.7 9.3 4.9 10.4 H-4.9 C-3.7 9.3 -3 7.9 -3 5.2 Z" fill="url(#plugBody)"/>
+        <path d="M-4.5 10.2 H4.5 Q6 10.2 6 11.7 V27 Q6 28.1 4.9 28.1 H-4.9 Q-6 28.1 -6 27 V11.7 Q-6 10.2 -4.5 10.2 Z" fill="url(#plugBody)"/>
+        <rect x="-5.1" y="9.85" width="10.2" height=".6" rx=".3" fill="#3a3a3f"/>
+        <rect x="-4.4" y="28" width="8.8" height="7.6" rx=".35" fill="url(#plugShell)"/>
+        <rect x="-4.4" y="28" width="8.8" height=".5" fill="#8f8c84" opacity=".7"/>
+      </g>
+    </defs>
+    <g id="cabPath"><path class="c0"/><path class="cbraid" id="braid"/><path class="c1"/></g>
+    <!-- Stecker unten: wandert an der Kabelspitze mit (Ursprung = Kabelende, Spitze zeigt in Wachstumsrichtung) -->
+    <use class="plug" id="plugEnd" href="#usbc"/>
   </svg>
-  <svg id="beam" aria-hidden="true"><line id="beamL" x1="0" y1="0" x2="0" y2="0"
-    stroke="#6F798F" stroke-width="1.4" stroke-linecap="round" visibility="hidden" /></svg>
-  <div class="say" id="say"><span id="w1">believe</span> the story</div>
-
-  <div id="goose" role="img" aria-label="Gans aus Kreuzen mit Kind auf dem Rücken">
-    <img class="wing-far" src="assets/img/goose-wing-far.webp" alt="" />
-    <img src="assets/img/goose-body.webp" alt="" />
-    <img class="wing-near" src="assets/img/goose-wing-near.webp" alt="" />
-  </div>
+  <!-- Stecker oben: eigene Ebene ÜBER der Powerbank (z8), in ihren Grundmaßen (84×137, skaliert wie sie): derselbe Stecker
+       umgedreht, Metallhülse steckt in der USB-C-Buchse (oberhalb der Buchsenmitte weggeschnitten), Gehäuse bündig darunter -->
+  <svg class="cable cable--top" aria-hidden="true">
+    <defs><clipPath id="portClip"><rect x="-20" y="138.4" width="124" height="120"/></clipPath></defs>
+    <g class="plug" id="plugTop" clip-path="url(#portClip)"><use href="#usbc" transform="translate(22.3 165.8) rotate(180) scale(.9)"/></g>
+  </svg>
 
   <div class="enter" id="enter">
     <button type="button" data-sound="on"><span>&#9654;&nbsp; enter with sound</span><small>(recommend)</small></button>
@@ -148,172 +131,124 @@
 <script>
 (function(){
   let gone=false;                         // true, sobald die Startseite dieses Dokument übernommen hat -> hier ruht alles
-  const DURATION = 5200;                 // Laden 0 -> 100 % (bisherige Ladezeit)
-  const FLY_START = 250, FLY_DUR = 4700; // Gleitflug der Gans (ms)
-  const GOOSE_ROT = 12;                  // Grad im Uhrzeigersinn: Kopf etwas mehr zur Zielecke oben links
-  const GOOSE_AR = 815/1200, MAD_AR = 1207/1400;
-  const NOSE = [0.678,0.108], EYE = [0.481,0.089];   // im madonna.webp (relativ): Nasenspitze, Auge der Mutter
-  const EDGE = [0.0381,0.9006];          // Bronze-Unterkante (unterste 30 Zeilen, weiche Kante mitgezählt): 3.8 % – 90.1 %
-  const CAB = 1000;                      // Kabel + Stecker zeichnen sich in einem Zug von der Powerbank bis in den Button (ms)
-  const PLUG = 22;                       // Stecker unten (Körper 16 + Metallspitze 6 px): letztes Stück des Zugs, wächst nach links in den Button
-  const SOFT = 2;                        // Kante der Einblend-Maske (px) – scharf, kein weißer Dunst beim Erscheinen
-  const PBS = 1.25;                      // Powerbank-Vergrößerung (= CSS --pbs)
-  const BEAM_IN = 300, WRITE = 800, BEAM_OUT = 320;   // Linie raus · Satz schreiben · Linie zurückziehen (ms)
+  const DURATION = 5200;                 // Laden 0 -> 100 % dauert mindestens so lange (echtes Laden kann länger dauern)
+  const UP = 0.9;                         // Stecker: Powerbank-Grundmaß-px je Stecker-Einheit u (Gehäuse 12u = 10.8, passt zur Buchse)
+  const PL = 35.6, CABU = 5.2;            // Steckerlänge (Kabelende bis Spitze) und Kabeldicke in u (Hals 6u)
+  const PHONE = !!window.NIH_PHONE;      // Handy (js/device.js): kleinere Powerbank, Buttons fast bildschirmbreit
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   const $ = (id)=>document.getElementById(id);
-  const cv=$('trail'), ctx=cv.getContext('2d'), goose=$('goose'), mad=$('mad'), say=$('say'), beamL=$('beamL');
-  const pct=$('pct'), pb=$('pb'), enter=$('enter');
+  const pb=$('pb'), pct=$('pct'), enter=$('enter'), fx=$('fx'), ctx=fx.getContext('2d');
+  const paths=[...$('cabPath').querySelectorAll('.c0, .c1')], braidEl=$('braid'), plugTop=$('plugTop'), plugEnd=$('plugEnd');
   const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 
   // ---------- Geometrie ----------
-  let W=0,H=0,dpr=1,gw=0,gh=0,S={x:0,y:0},E={x:0,y:0},dir={x:0,y:0},perp={x:0,y:0},L=1;
-  let madR={x:0,y:0,w:0,h:0}, eye={x:0,y:0}, txt={x:0,y:0,w:0,h:0};
-  let maskAng=0, maskLen=1;              // CSS-Winkel & Länge des Masken-Verlaufs (entlang der Flugrichtung)
+  let W=0, H=0, PBS=1.875, SU=1.69, Lc=1, P0=[0,0], braid=[], braidN=-1;
   function layout(){
-    W=innerWidth; H=innerHeight; dpr=Math.min(devicePixelRatio||1,2);
-    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
-    gw=cl(W*0.42,280,640); gh=gw*GOOSE_AR; goose.style.width=gw+'px';
-    S={x:W+gw*0.30, y:H+gh*0.30};                        // Start: knapp außerhalb unten rechts
-    E={x:-gw*0.55,  y:-gh*0.55};                         // Ziel: außerhalb oben links
-    L=Math.hypot(E.x-S.x,E.y-S.y); dir={x:(E.x-S.x)/L, y:(E.y-S.y)/L}; perp={x:-dir.y, y:dir.x};
-    // Skulptur mittig
-    const mh=Math.min(H*0.50,(W*0.56)/MAD_AR), mw=mh*MAD_AR;
-    madR={x:(W-mw)/2, y:H*0.41-mh/2, w:mw, h:mh};
-    Object.assign(mad.style,{width:mw+'px',height:mh+'px',left:madR.x+'px',top:madR.y+'px'});
-    // Masken-Verlauf zeigt in Flugrichtung (Start = die Seite, von der die Gans kommt)
-    const th=Math.atan2(dir.x,-dir.y); maskAng=th*180/Math.PI;
-    maskLen=Math.abs(mw*Math.sin(th))+Math.abs(mh*Math.cos(th));
-    eye={x:madR.x+EYE[0]*mw, y:madR.y+EYE[1]*mh};
-    // Satz in Blickrichtung (oben rechts vor dem Gesicht), einzeilig, im Viewport
-    const fs=cl(mh*0.068,20,34); say.style.fontSize=fs.toFixed(1)+'px';
-    const tw=say.offsetWidth, tH=say.offsetHeight;
-    let bx=madR.x+NOSE[0]*mw+fs*0.9, by=madR.y+NOSE[1]*mh-fs*3.1;
-    bx=Math.min(bx,W-tw-16); by=Math.max(by,16);
-    txt={x:bx,y:by,w:tw,h:tH}; say.style.left=bx+'px'; say.style.top=by+'px';
-    // Powerbank: rechts unter dem Satz (weiter rechts & tiefer als unter „believe")
-    const w1=$('w1').offsetWidth, pbW=84*PBS, pbH=137*PBS;
-    const px=cl(bx+w1*0.5-pbW/2+fs*2.6, 12, W-pbW-16), py=cl(by+tH+14+fs*1.6, 12, H-pbH-16);
+    W=innerWidth; H=innerHeight; const dpr=Math.min(devicePixelRatio||1,2);
+    fx.width=Math.round(W*dpr); fx.height=Math.round(H*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+    // Powerbank 50 % größer als zuvor (1.25 -> 1.875, Handy 0.9 -> 1.35), höchstens 30 % der Bildschirmhöhe; mittig im oberen Drittel
+    PBS=Math.min(PHONE ? 1.35 : 1.875, H*0.30/137); SU=UP*PBS;   // SU: Bildschirm-px je Stecker-Einheit u
+    pb.style.setProperty('--pbs', PBS.toFixed(3));
+    const pbW=84*PBS, pbH=137*PBS, px=(W-pbW)/2, py=Math.max(16, H*0.22-pbH/2);
     pb.style.left=px+'px'; pb.style.top=py+'px';
-    // Buttons: direkt an der Unterkante der Figur, gleiche Breite wie die Bronze-Kante
-    const ew=(EDGE[1]-EDGE[0])*mw;
-    Object.assign(enter.style,{left:(madR.x+EDGE[0]*mw)+'px', width:ew+'px', top:(madR.y+mh)+'px',
-                               fontSize:cl(ew/24,10.5,13).toFixed(1)+'px'});
-  }
-  addEventListener('resize',()=>{ if(gone) return; layout(); layoutCable(); if(!beamDone) hideCable(); }); layout();
-
-  // ---------- USB-C-Kabel ----------
-  const seg=[{p:[...$('segA').querySelectorAll('path')], len:1}];
-  let cabPts=[], cabMaxX=-1e9, cabMaxY=-1e9;              // Stützpunkte des Kabels (Kreuz-Lücke zwischen Kabel und Figur)
-  function layoutCable(){
-    // Stecker oben: linker USB-C-Port der Powerbank (Unterkante, 18 % + halbe Portbreite, schräge Kante +1.5px)
-    const pbx=parseFloat(pb.style.left), pby=parseFloat(pb.style.top), sx=pbx+(15+5+1.5)*PBS, sy=pby+(137-2)*PBS;
-    $('plugTopBody').setAttribute('x',(sx-4).toFixed(1)); $('plugTopBody').setAttribute('y',sy.toFixed(1));
-    const P0=[sx, sy+15];
-    // Ziel: rechte Seitenkante des rechten Buttons, mittig; Stecker (16px) liegt davor, Spitze steckt unter dem Button
-    const bx=parseFloat(enter.style.left)+parseFloat(enter.style.width), by=parseFloat(enter.style.top)+(enter.offsetHeight||44)/2;
-    const Q=[bx+17, by];                                  // Kabel endet hinten am Stecker
-    // ein einziger weicher Bogen: senkrecht aus dem Port, rechts an der Figur vorbei, unten rund und WAAGERECHT in den Stecker
-    const drop=Q[1]-P0[1], swing=cl((P0[0]-Q[0])*0.9+34, 40, 90);
-    const A=`M${P0[0].toFixed(1)} ${P0[1].toFixed(1)} C${P0[0].toFixed(1)} ${(P0[1]+drop*0.62).toFixed(1)} ${(Q[0]+swing).toFixed(1)} ${Q[1].toFixed(1)} ${Q[0].toFixed(1)} ${Q[1].toFixed(1)}`;
-    seg[0].p.forEach(p=>p.setAttribute('d',A)); const Lc=seg[0].p[0].getTotalLength(); seg[0].len=Lc+2;
-    cabPts=[]; cabMaxX=cabMaxY=-1e9;
-    for(let i=0;i<=60;i++){ const q=seg[0].p[0].getPointAtLength(Lc*i/60); cabPts.push(q.x,q.y); cabMaxX=Math.max(cabMaxX,q.x); cabMaxY=Math.max(cabMaxY,q.y); }
-    $('plugEnd').setAttribute('transform',`translate(${(bx+1).toFixed(1)} ${by.toFixed(1)})`);
-    if(cableDone) seg[0].p.forEach(p=>{ p.style.strokeDasharray='none'; p.style.strokeDashoffset='0'; });
-  }
-  let cableDone=false;
-  function cable(t){                                    // t = ms seit Start des Kabels
-    const k=cl(t/CAB,0,1), e=0.5-0.5*Math.cos(Math.PI*k), n=seg[0].len, drawn=(n+PLUG)*e;   // ein durchgehender, weicher Zug
-    const c=Math.min(drawn,n), w=cl(drawn-n,0,PLUG);
-    seg[0].p.forEach(p=>{ p.style.strokeDasharray=n.toFixed(1); p.style.strokeDashoffset=(n-c).toFixed(1); });
-    $('plugTop').style.opacity=cl(drawn/14,0,1).toFixed(3);            // Stecker oben kommt mit dem ersten Stück Kabel
-    // Stecker unten erst, wenn das Kabel angekommen ist: wird von hinten (x 17) nach vorne in den Button „weitergezeichnet"
-    $('plugClipR').setAttribute('x',(17-w).toFixed(2)); $('plugClipR').setAttribute('width',w.toFixed(2));
-    $('plugEnd').style.opacity = w>0 ? '1' : '0';
-    if(k>=1){ cableDone=true; seg[0].p.forEach(p=>{ p.style.strokeDasharray='none'; p.style.strokeDashoffset='0'; }); }
-  }
-  // vor dem Start: unsichtbar (Dash-Offset = volle Länge)
-  function hideCable(){ seg[0].p.forEach(p=>{ p.style.strokeDasharray=seg[0].len.toFixed(1); p.style.strokeDashoffset=seg[0].len.toFixed(1); }); }
-  layoutCable(); hideCable();
-
-  // Position entlang des Masken-Verlaufs (0 = Seite unten rechts, maskLen = Seite oben links)
-  const along=(x,y)=>(x-(madR.x+madR.w/2))*dir.x+(y-(madR.y+madR.h/2))*dir.y+maskLen/2;
-
-  // ---------- Flug ----------
-  const ease=(u)=>0.5*u+0.5*u*u*(3-2*u);
-  function flight(u){ const e=ease(u), bob=Math.sin(u*Math.PI*3)*10;
-    return {x:S.x+(E.x-S.x)*e+perp.x*bob, y:S.y+(E.y-S.y)*e+perp.y*bob, e}; }
-  function tailPoint(e){ const back=gw*0.40;             // Punkt HINTER der Gans: dort entstehen Kreuze & Skulptur
-    return {x:S.x+(E.x-S.x)*e-dir.x*back, y:S.y+(E.y-S.y)*e-dir.y*back}; }
-
-  // ---------- Kreuze: Schleier + Fluglinie ----------
-  const line=[], veil=[]; let lastEmitE=-1; const STEP=15;
-  const gauss=()=>{ let u=0; for(let i=0;i<3;i++) u+=Math.random(); return (u/3-0.5)*2; };
-  function emit(e,now,withVeil){
-    line.push({e, off:(Math.random()-0.5)*5, off0:gauss()*58, rot:(Math.random()-0.5)*0.35, born:now, s:6.5+Math.random()*2.5});
-    if(withVeil) for(let k=0;k<2;k++) veil.push({e, off:gauss()*80, rot:(Math.random()-0.5)*0.8, born:now, life:700+Math.random()*600,
-                                    s:5+Math.random()*3, drift:(Math.random()-0.5)*0.03});
-  }
-  function cross(x,y,s,rot,a){
-    ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.globalAlpha=a; ctx.beginPath();
-    ctx.moveTo(0,-s*0.5); ctx.lineTo(0,s*0.5); ctx.moveTo(-s*0.32,-s*0.16); ctx.lineTo(s*0.32,-s*0.16);
-    ctx.stroke(); ctx.restore();
-  }
-  let revealB=-1e9;                                       // aktuelle Masken-Kante (entlang along())
-  const cabRight=(y)=>{ let m=-1e9; for(let i=0;i<cabPts.length;i+=2) if(Math.abs(cabPts[i+1]-y)<10) m=Math.max(m,cabPts[i]); return m; };
-  // Lücke: Skulptur-Rechteck + Streifen bis rechts hinter das Kabel (kein Kreuz zwischen Kabel und Figur)
-  const inGap=(x,y)=> x>madR.x-8 && y>madR.y-8 && along(x,y)<revealB+SOFT &&
-    ((x<madR.x+madR.w+8 && y<madR.y+madR.h+8) || (x<cabMaxX+8 && y<cabMaxY+8 && x<cabRight(y)+8));
-  function draw(now){
-    ctx.clearRect(0,0,W,H); ctx.strokeStyle='#798816'; ctx.lineWidth=1.5; ctx.lineCap='round';
-    for(const c of line){
-      const a=now-c.born, off=c.off+(c.off0-c.off)*Math.exp(-a/320);
-      const p=tailPoint(c.e), x=p.x+perp.x*off, y=p.y+perp.y*off;
-      if(inGap(x,y)) continue;                              // Linie im Bereich der Skulptur unterbrochen
-      cross(x,y,c.s,c.rot,Math.min(1,a/220)*0.9);
-    }
-    for(let i=veil.length-1;i>=0;i--){
-      const v=veil[i], a=now-v.born; if(a>v.life){ veil.splice(i,1); continue; }
-      const k=a/v.life, p=tailPoint(v.e), off=v.off*(1+k*0.35);
-      cross(p.x+perp.x*off-dir.x*a*v.drift*10, p.y+perp.y*off-dir.y*a*v.drift*10, v.s, v.rot+k*0.6, Math.sin(Math.PI*k)*0.55);
+    // Buttons: größer, mittig, weiter unten (Mitte bei 74 % der Höhe)
+    const ew = PHONE ? Math.min(W-32, 420) : cl(W*0.34, 380, 520);
+    enter.style.fontSize = (PHONE ? 13 : cl(W*0.0105, 14, 17)).toFixed(1)+'px';
+    enter.style.width=ew+'px'; enter.style.left=((W-ew)/2)+'px';
+    enter.style.top=(H*0.74 - (enter.offsetHeight||60)/2)+'px';
+    // Kabel: beginnt am Hals des oberen Steckers (Grundmaße: x 22.3, y 165.8) und läuft als weiche S-Kurve senkrecht hinunter;
+    // unten endet es am Hals des unteren Steckers, dessen Metallhülse 2u über der Button-Oberkante sichtbar ist (Rest steckt drin)
+    plugTop.setAttribute('transform',`translate(${px.toFixed(1)} ${py.toFixed(1)}) scale(${PBS.toFixed(3)})`);
+    P0=[px+22.3*PBS, py+165.8*PBS];
+    const top=parseFloat(enter.style.top), Qc=[W/2, top+(7.6-2)*SU-PL*SU], drop=Qc[1]-P0[1];
+    const d=`M${P0[0].toFixed(1)} ${P0[1].toFixed(1)} C${P0[0].toFixed(1)} ${(P0[1]+drop*0.5).toFixed(1)} ${Qc[0].toFixed(1)} ${(Qc[1]-drop*0.5).toFixed(1)} ${Qc[0].toFixed(1)} ${Qc[1].toFixed(1)}`;
+    const CW=CABU*SU;                                                  // Kabeldicke in px
+    paths.forEach((p,i)=>{ p.setAttribute('d',d); p.style.strokeWidth=(i ? CW*0.14 : CW).toFixed(2)+'px';
+      if(i) p.style.transform=`translate(${(-CW*0.2).toFixed(2)}px,0)`; });
+    Lc=paths[0].getTotalLength();
+    // Flechtmuster: kurze schräge Striche quer übers Kabel, abwechselnd / und \ (Zickzack wie geflochten)
+    braid=[]; braidN=-1; const pitch=Math.max(2.2, CW*0.3), hw=CW*0.4, ht=pitch*0.45;
+    for(let s=pitch*0.5; s<Lc-0.5; s+=pitch){
+      const a=paths[0].getPointAtLength(s), b=paths[0].getPointAtLength(Math.min(Lc, s+0.5));
+      let tx=b.x-a.x, ty=b.y-a.y; const l=Math.hypot(tx,ty)||1; tx/=l; ty/=l;
+      const nx=-ty, ny=tx, sg=braid.length%2 ? 1 : -1;
+      braid.push({ s, d:`M${(a.x+nx*hw-tx*ht*sg).toFixed(1)} ${(a.y+ny*hw-ty*ht*sg).toFixed(1)}L${(a.x-nx*hw+tx*ht*sg).toFixed(1)} ${(a.y-ny*hw+ty*ht*sg).toFixed(1)}` });
     }
   }
 
-  // ---------- Skulptur-Maske: sichtbar ist alles HINTER der Kante (Richtung Startecke) ----------
-  let revealed=false, revealAt=0;
-  function setMask(b){
-    revealB=b;
-    if(b>=maskLen+SOFT){ mad.style.webkitMaskImage=mad.style.maskImage='none'; return true; }
-    const g=`linear-gradient(${maskAng.toFixed(2)}deg,#000 0px,#000 ${Math.max(0,b).toFixed(1)}px,transparent ${(b+SOFT).toFixed(1)}px)`;
-    mad.style.webkitMaskImage=mad.style.maskImage=g; return false;
+  // ---------- Kabel wächst mit dem Ladestand (k = 0..1), Stecker an der Spitze ----------
+  let shownK=0;
+  function drawCable(k){
+    const c=Lc*k;
+    paths.forEach(p=>{ p.style.strokeDasharray=Lc.toFixed(1); p.style.strokeDashoffset=(Lc-c).toFixed(1); });
+    let n=0; while(n<braid.length && braid[n].s<=c-1) n++;           // Flechtmuster nur so weit, wie das Kabel schon da ist
+    if(n!==braidN){ braidN=n; braidEl.setAttribute('d', braid.slice(0,n).map(b=>b.d).join('') || 'M0 0'); }
+    plugTop.style.opacity = k>0 ? '1' : '0';
+    if(c<3){ plugEnd.style.opacity='0'; return; }
+    const a=paths[0].getPointAtLength(c), b=paths[0].getPointAtLength(Math.max(0,c-2));
+    const ang=Math.atan2(a.y-b.y, a.x-b.x)*180/Math.PI - 90;      // Steckerspitze zeigt in Wachstumsrichtung
+    // Ursprung des Steckers (Hals) sitzt auf der Kabelspitze, der Stecker ragt in Wachstumsrichtung weiter
+    plugEnd.setAttribute('transform',`translate(${a.x.toFixed(1)} ${a.y.toFixed(1)}) rotate(${ang.toFixed(2)}) scale(${SU.toFixed(3)})`);
+    plugEnd.style.opacity='1';
   }
 
-  // ---------- Linie aus dem Auge schreibt den Satz ----------
-  let beamDone=false;
-  function beam(t){                                       // t = ms seit vollständigem Erscheinen der Skulptur
-    const ty=txt.y+txt.h*0.62;                           // Schreibhöhe (etwa Mitte der Kleinbuchstaben)
-    if(t<BEAM_IN){                                       // Linie schießt vom Auge zum Satzanfang
-      const k=1-Math.pow(1-t/BEAM_IN,3);
-      showBeam(eye.x,eye.y, eye.x+(txt.x-eye.x)*k, eye.y+(ty-eye.y)*k); say.style.clipPath='inset(-20% 100% -20% 0)';
-    } else if(t<BEAM_IN+WRITE){                          // Spitze fährt schreibend über den Satz
-      const k=(t-BEAM_IN)/WRITE, px=txt.x+txt.w*k, wob=Math.sin(k*Math.PI*22)*txt.h*0.16;
-      showBeam(eye.x,eye.y, px, ty+wob); say.style.clipPath=`inset(-20% ${((1-k)*100).toFixed(2)}% -20% 0)`;
-    } else if(t<BEAM_IN+WRITE+BEAM_OUT){                 // Linie zieht sich vom Auge zum Satzende zurück
-      const k=1-Math.pow(1-(t-BEAM_IN-WRITE)/BEAM_OUT,2), ex=txt.x+txt.w;
-      showBeam(eye.x+(ex-eye.x)*k, eye.y+(ty-eye.y)*k, ex, ty); say.style.clipPath='none';
-    } else { beamL.setAttribute('visibility','hidden'); say.style.clipPath='none'; beamDone=true; }
+  // ---------- Feuerwerk (schwarz) rund um die Buttons: kurze Raketen nach außen, zerplatzen schnell; nur AUSSERHALB der Buttons ----------
+  const parts=[], rockets=[]; let fwEnd=0, lastT=0, hole=null;
+  function burst(x,y){
+    const n=PHONE?30:42, spd=PHONE?3.2:4.4, now=performance.now();   // schneller Knall: hohe Startgeschwindigkeit, kurzes Leben
+    for(let i=0;i<n;i++){ const a=(i/n)*Math.PI*2+Math.random()*0.18, v=spd*(0.55+Math.random()*0.45);
+      parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,born:now,s:1.3+Math.random()*1.1,gl:Math.random()<0.3,
+                  ph:Math.random()*6.3, fall:0.85+Math.random()*0.5,            // fall = Sinkgeschwindigkeit (px/Bild)
+                  land:0, glide:450+Math.random()*450, burn:600+Math.random()*500}); }   // am Boden: ausgleiten, dann verglühen
   }
-  function showBeam(x1,y1,x2,y2){
-    beamL.setAttribute('x1',x1.toFixed(1)); beamL.setAttribute('y1',y1.toFixed(1));
-    beamL.setAttribute('x2',x2.toFixed(1)); beamL.setAttribute('y2',y2.toFixed(1)); beamL.setAttribute('visibility','visible');
+  function fireworks(){
+    // Rundherum um die Buttons (oben, unten, seitlich, Ecken): kurze, schnelle Raketen vom Button-Rand nach außen,
+    // die rasch zerplatzen
+    const r=enter.getBoundingClientRect(), h=r.height, w=r.width, cx=r.left+w/2, cy=r.top+h/2, now=performance.now();
+    hole=[r.left-3, r.top-3, w+6, h+6];                              // Buttons + 3 px bleiben frei
+    const rx=w/2+Math.max(46, h*0.9), ry=h/2+Math.max(46, h*0.9), n=PHONE?7:9;
+    for(let i=0;i<n;i++){
+      const a=-Math.PI/2 + i*2*Math.PI/n + (Math.random()-0.5)*0.35;
+      const ex=cx+Math.cos(a)*rx*(0.95+Math.random()*0.15), ey=cy+Math.sin(a)*ry*(0.95+Math.random()*0.25);
+      const sx0=cx+Math.cos(a)*(w/2+4), sy0=cy+Math.sin(a)*(h/2+4);   // Start knapp außerhalb des Buttons
+      rockets.push({ x0:sx0, y0:sy0, x1:ex, y1:ey, t:now+i*70+Math.random()*50, dur:170+Math.random()*80 });
+    }
+    fwEnd=now+n*70+1200;
+  }
+  function drawFx(now){
+    const dt=lastT ? cl((now-lastT)/16.67,0.2,3) : 1; lastT=now;
+    ctx.clearRect(0,0,W,H); if(!hole) return;
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.rect(hole[0],hole[1],hole[2],hole[3]); ctx.clip('evenodd');
+    ctx.strokeStyle=ctx.fillStyle='#000'; ctx.lineCap='round';
+    for(let i=rockets.length-1;i>=0;i--){                            // Raketen: Leuchtspur nach oben, bremsen ab
+      const r=rockets[i], k=(now-r.t)/r.dur; if(k<0) continue;
+      if(k>=1){ burst(r.x1,r.y1); rockets.splice(i,1); continue; }
+      const e=1-Math.pow(1-k,1.6), e0=1-Math.pow(1-Math.max(0,k-0.25),1.6);
+      ctx.globalAlpha=0.75; ctx.lineWidth=1.6; ctx.beginPath();
+      ctx.moveTo(r.x0+(r.x1-r.x0)*e0, r.y0+(r.y1-r.y0)*e0); ctx.lineTo(r.x0+(r.x1-r.x0)*e, r.y0+(r.y1-r.y0)*e); ctx.stroke();
+    }
+    const floor=H-2.5;
+    for(let i=parts.length-1;i>=0;i--){                              // Funken: schneller Knall, dann sinken sie (leicht pendelnd)
+      const p=parts[i], a=now-p.born; let k, fl=1;                    // zu Boden, gleiten dort aus und verglühen erst dann
+      if(!p.land){
+        const drag=Math.pow(0.93,dt); p.vx*=drag; p.vy=p.vy*drag+p.fall*(1-0.93)*dt;   // Endtempo nach unten = fall
+        p.x+=(p.vx+Math.sin(a/420+p.ph)*0.22)*dt; p.y+=p.vy*dt;
+        if(p.y>=floor){ p.y=floor; p.land=now; p.vx=p.vx*0.6+(Math.random()-0.5)*1.8; p.vy=0; }   // aufgekommen
+        k = a<250 ? 1 : 0.6+0.4*Math.exp(-(a-250)/700);              // nach dem Knall etwas gedimmt
+        if(p.gl && a>600 && Math.random()<0.3) fl=0.3;                // einige glitzern beim Fallen
+      } else {
+        const g=now-p.land; p.vx*=Math.pow(0.965,dt); p.x+=p.vx*dt;   // gleitet über den Boden aus
+        const b=cl((g-p.glide)/p.burn,0,1); if(b>=1 || a>16000){ parts.splice(i,1); continue; }
+        k=0.6*(1-b*b); if(b>0 && Math.random()<0.35) fl=0.35;        // verglüht flackernd
+      }
+      ctx.globalAlpha=k*0.55*fl; ctx.lineWidth=p.s; ctx.beginPath(); ctx.moveTo(p.x-p.vx*4.5, p.y-p.vy*4.5); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.globalAlpha=k*fl; ctx.fillRect(p.x-p.s/2, p.y-p.s/2, p.s, p.s);
+    }
+    ctx.restore(); ctx.globalAlpha=1;
   }
 
   // ---------- Laden / Buttons ----------
-  function setPct(p){
-    const n=Math.round(p); pct.textContent=n; pb.setAttribute('aria-valuenow',n);
-    if(n>=100){ pb.classList.remove('charging'); if(!enter.classList.contains('show')){ enter.classList.add('show'); showAt=performance.now(); } }
-  }
+  function setPct(p){ const n=Math.round(p); pct.textContent=n; pb.setAttribute('aria-valuenow',n); }
   // Ton-Wahl merken ('on'|'off', sessionStorage 'nihanzo-sound' – liest die Startseite) -> ausblenden -> Startseite (beginnt mit dem Vorhang)
   // Die Startseite wird NICHT per Seitenwechsel geöffnet, sondern in DIESES Dokument geschrieben (document.write): Browser geben Ton
   // nur in der Seite frei, in der geklickt wurde (Safari/Firefox/Handys: nach einem Seitenwechsel bliebe „mit Ton" stumm, und Scrollen
@@ -340,43 +275,38 @@
     }, 200);
   }
   enter.addEventListener('click',(e)=>{
-    const b=e.target.closest('button'); if(!b || leaving) return; leaving=true;
+    const b=e.target.closest('button'); if(!b || leaving || !enter.classList.contains('ready')) return; leaving=true;
     try{ sessionStorage.setItem('nihanzo-sound', b.dataset.sound); }catch(_){}
+    window.__nihSound=b.dataset.sound;               // frische Wahl für die Startseite (gilt dort vor ?mute, s. startpage.html)
     if(b.dataset.sound==='on') unlockAudio();
+    // Mauslage an die Startseite weitergeben: ihre springende Figur beginnt dort, wo der Zeiger steht (nicht in der Mitte)
+    window.__nihMouse={x:e.clientX,y:e.clientY};
+    addEventListener('mousemove',(ev)=>{ window.__nihMouse={x:ev.clientX,y:ev.clientY}; });
     document.body.style.transition='opacity .8s ease'; document.body.style.opacity='0';
     setTimeout(openStart, 800);
   });
 
   // ---------- Ablauf ----------
-  const t0=performance.now(); let done=false, beamEndAt=0, showAt=0;
+  const t0=performance.now(); let plugged=false;
   function frame(now){
     if(gone) return;                                  // Startseite ist offen -> Ladeseite ruht
     // Fortschritt = langsamerer von Ladeanimation (Zeit) und echtem Laden der Startseite (window.__load, s. u.)
     const ld=window.__load||{p:1,done:true}, t=now-t0, base=Math.min(cl(t/DURATION,0,1), ld.done ? 1 : Math.min(0.995, ld.p));
     setPct(base<1 ? Math.min(99, base*100+Math.random()*1.2) : 100);
-    const u=reduce?1:cl((t-FLY_START)/FLY_DUR,0,1), f=flight(u);
-    goose.style.transform=`translate(${(f.x-gw/2).toFixed(1)}px,${(f.y-gh/2).toFixed(1)}px) rotate(${(GOOSE_ROT+Math.sin(u*Math.PI*3+0.6)*2).toFixed(2)}deg)`;
-    goose.style.visibility = u>=1 ? 'hidden' : '';
-    // Kreuze entlang des Weges (lückenlos, auch wenn Frames ausfallen)
-    // Start bei 0 (nicht beim ersten Frame): fallen Frames aus (Hintergrund-Tab), wird die Linie vollständig nachgeholt;
-    // Schleier nur direkt hinter der Gans (nicht für nachgeholte Stücke)
-    if(u>0){ if(lastEmitE<0) lastEmitE=0; const stepE=STEP/L;
-      while(lastEmitE+stepE<=f.e){ lastEmitE+=stepE; const tp=tailPoint(lastEmitE);
-        if(tp.x>-20 && tp.y>-20 && tp.x<W+20 && tp.y<H+20) emit(lastEmitE,now,(f.e-lastEmitE)*L<160); } }
-    // Skulptur erscheint schräg direkt hinter der Gans
-    if(!revealed){ const tp=tailPoint(f.e); if(setMask(reduce?1e9:along(tp.x,tp.y))){ revealed=true; revealAt=now; } }
-    if(revealed && !beamDone){ beam(reduce?1e9:now-revealAt); if(beamDone) beamEndAt=now; }
-    // Kabel erst, wenn der Satz steht UND die Buttons da sind (der Stecker soll in einen sichtbaren Button)
-    if(beamDone && showAt && !cableDone) cable(reduce?1e9:now-Math.max(beamEndAt,showAt+250));
-    draw(now);
-    if(base>=1 && u>=1 && revealed && beamDone && cableDone && veil.length===0){ done=true; setPct(100); }
-    else requestAnimationFrame(frame);
+    const dt=Math.min(now-(frame.t||now), 500); frame.t=now;          // zeitbasiert: holt auch bei wenigen Bildern/s in ~0.3 s auf
+    shownK = reduce ? base : Math.max(shownK, shownK+(base-shownK)*(1-Math.exp(-dt/90)));   // Kabel wächst weich und nie zurück
+    if(base>=1 && shownK>0.997) shownK=1;
+    drawCable(shownK);
+    if(shownK>=1 && !plugged){                         // angekommen: Buttons werden aktiv, Feuerwerk
+      plugged=true; pb.classList.remove('charging'); enter.classList.add('ready'); if(!reduce) fireworks();
+    }
+    drawFx(now);
+    if(!(plugged && parts.length===0 && rockets.length===0 && now>fwEnd)) requestAnimationFrame(frame);
   }
+  layout(); drawCable(0);
   requestAnimationFrame(frame);
-  // Größenänderung / Schrift geladen: Canvas wird geleert -> sofort neu zeichnen (auch im Hintergrund-Tab)
-  addEventListener('resize',()=>{ if(gone) return; if(revealed) setMask(1e9); draw(performance.now()); if(done) requestAnimationFrame(frame); });
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if(gone) return; layout(); layoutCable(); if(!beamDone) hideCable();
-    if(revealed) setMask(1e9); draw(performance.now()); });
+  addEventListener('resize',()=>{ if(gone) return; layout(); drawCable(shownK); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if(gone) return; layout(); drawCable(shownK); });
 })();
 </script>
 <script>

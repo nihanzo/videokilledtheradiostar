@@ -450,7 +450,7 @@ async function buildFigur(json){
 // ---------- Umgebung fürs Glas: Würfel-Map aus den Rahmenbildern (was den Würfel auf der Seite umgibt) ----------
 async function buildEnv(){
   const ims = await Promise.all(['building', 'frame-flowers', 'frame-houses', 'frame-bronze']
-    .map((n)=>loadImg(`assets/img/${n}.webp`)));
+    .map((n)=>loadImg(`assets/img/${n}.webp${n === 'frame-bronze' ? '?v=3' : ''}`)));
   const N = 512, face = (im, crop)=>{ const c = document.createElement('canvas'); c.width = c.height = N;
     const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, N, N);             // Transparentes = Weiß
     if(im){ const [sx, sy, sw, sh] = crop || [0, 0, im.naturalWidth, im.naturalHeight], k = Math.max(N/sw, N/sh);
@@ -463,7 +463,7 @@ async function buildEnv(){
   // Reihenfolge px, nx, py, ny, pz, nz – mit three's flipEnvMap (x gespiegelt) liegt px links (−x), nx rechts (+x):
   // links Blumen, rechts Gebäude, oben Berge, unten Bronze, hinter der Kamera Blumen (Vorderseite spiegelt sie), hinter dem Würfel die Rahmen-Wand
   const env = new THREE.CubeTexture([ face(ims[1]), face(ims[0], [840, 0, 696, 850]), face(ims[2], [520, 0, 1000, 220]),
-    face(ims[3], [1400, 60, 1000, 343]), face(ims[1]), front ]);                            // Häuser/Bronze: nur deckender Teil
+    face(ims[3], [1400, 25, 1000, 321]), face(ims[1]), front ]);                            // Häuser/Bronze: nur deckender Teil (Bronze 3800×346)
   env.colorSpace = THREE.SRGBColorSpace; env.minFilter = THREE.LinearMipmapLinearFilter; env.needsUpdate = true;
   const top = texOf(ims[2]); top.premultiplyAlpha = true;                                 // weich gefiltert ohne dunkle Ränder
   glassUni.uTop.value = top;

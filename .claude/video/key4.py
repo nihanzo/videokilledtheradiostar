@@ -118,7 +118,16 @@ if fillreg is not None or keep_in is not None:                                 #
     FW = [np.clip(2*sum(w*FM[rf(t+k)].astype(np.float32) for k, w in zip(range(-2, 3), (1, 2, 3, 2, 1)))/9, 0, 1)
           for t in range(N)]                                                   # … über 5 Bilder gemittelt
 
-os.makedirs('kgif/seq', exist_ok=True); [os.remove(f) for f in glob.glob('kgif/seq/*.png')]
+# Ausgabe größer als der Kasten (echte Details aus der 1920er Quelle, Kasten ≈ 1876 px breit -> bis ~1.6×):
+# KALE_FOUT=1.6 KALE_OUT=kgif/seq16 python3 key4.py 53 1150   (Bereiche/Ränder bleiben in 1278er-Koordinaten)
+FOUT = float(os.environ.get('KALE_FOUT', '1')); OUTD = os.environ.get('KALE_OUT', 'kgif/seq')
+# 4e) KALE_DARKR=1: nur auf der rechten Kohl-Hälfte (weicher Übergang 42–58 % der Breite): dunkler Saum am Umriss
+#     (~7 Quell-px, dunkler als das nahe Blattinnere) bekommt weich die Farbe von innen; fast Schwarzes bis ~11 px vom
+#     Umriss (Helligkeit < DR_HI, voll ab DR_LO) wird durchsichtig; Stärke DR_K
+DARKR = os.environ.get('KALE_DARKR') == '1'; DR_LO, DR_HI, DR_S, DR_K = 8.0, 24.0, 3.5, 0.85
+_u = np.clip((np.arange(X1 - X0, dtype=np.float32)/(X1 - X0) - 0.42)/0.16, 0, 1); RW = (_u*_u*(3 - 2*_u))[None, :]
+WF, HF = (Wout, Hout) if FOUT == 1 else (int(Wout*FOUT)//2*2, int(Hout*FOUT)//2*2)
+os.makedirs(OUTD, exist_ok=True); [os.remove(f) for f in glob.glob(OUTD + '/*.png')]
 imgs = []
 for t in range(N):
     c = place(A[t].astype(np.float32)); al = ALS[t].astype(np.float32)
@@ -138,6 +147,17 @@ for t in range(N):
         fillc = np.clip(fillc + 0.9*detail, 0, 255)
         fc = np.clip(gblur(FW[t], 2.0)*3.0, 0, 1)[..., None]                   # Farbe 2–3 px über den Lückenrand (kein dunkler Umriss)
         c = c*(1 - fc) + fillc*fc; al = np.maximum(al, f)
+    if DARKR:                                                                  # 4e) rechte Hälfte: dunkle Ränder sanft entfernen
+        lv = c.max(2)
+        k6 = (gblur((al > 0.5).astype(np.float32), DR_S) > 0.98).astype(np.float32)   # Inneres ohne ~7 px Rand
+        w6 = gblur(k6, 4.0); av6 = np.dstack([gblur(c[..., k]*k6, 4.0) for k in range(3)])/np.maximum(w6, 1e-3)[..., None]
+        ring = ((al > 0.02) & (k6 < 0.5) & (w6 > 0.02)).astype(np.float32)
+        rel = lv/np.maximum(av6.max(2), 1.0)                                   # Helligkeit relativ zum nahen Blattinneren
+        mix = gblur(np.clip((0.97 - rel)/0.35, 0, 1)*ring*RW, 1.0)*ring         # dunkler als innen -> weich zur Farbe von innen
+        c = c + (av6 - c)*(DR_K*mix)[..., None]
+        lum = (lumf(rf(t-1)) + 2*lumf(t) + lumf(rf(t+1)))/4                      # fast Schwarzes (zeitlich [1 2 1], kein Flackern)
+        kb = (gblur((al > 0.5).astype(np.float32), 6.0) > 0.97).astype(np.float32)   # bis ~11 px vom Umriss
+        al = al*(1 - DR_K*np.clip((DR_HI - lum)/(DR_HI - DR_LO), 0, 1)*(1 - kb)*RW)
     inner = np.asarray(L8(al > 0.5).filter(ImageFilter.MinFilter(7))).astype(np.float32)/255   # 3 px eingezogen
     wi = gblur(inner, 3.0); avg = np.dstack([gblur(c[..., k]*inner, 3.0) for k in range(3)])/np.maximum(wi, 1e-3)[..., None]
     band = (inner < 0.5) & (wi > 0.02)                                         # 4) Randstreifen -> Farbe von innen
@@ -145,7 +165,7 @@ for t in range(N):
     sh = gblur(np.roll(al, int(round(OFF)), axis=0), SIG)
     bg = 255.0*(1 - OP*np.clip(sh, 0, 1))
     out = np.clip(c*al[..., None] + (1 - al)[..., None]*bg[..., None], 0, 255)
-    imgs.append(Image.fromarray(out.astype(np.uint8)).resize((Wout, Hout), Image.LANCZOS))
+    imgs.append(Image.fromarray(out.astype(np.uint8)).resize((WF, HF), Image.LANCZOS))
 order = list(range(N)) + list(range(N-2, 0, -1))
-for k, j in enumerate(order): imgs[j].save(f'kgif/seq/f{k:03d}.png')
+for k, j in enumerate(order): imgs[j].save(f'{OUTD}/f{k:03d}.png')
 print(len(order), 'Bilder')
