@@ -329,7 +329,10 @@
       L.p = want ? got/want : 1; };
     async function get(url, f){                          // lädt komplett (Stream bis zum Ende -> im Cache), zählt Bytes
       try{
-        const r = await fetch(url); if(f) f.len = +r.headers.get('content-length') || 0;
+        // Seiten und Skripte immer beim Server nachfragen (ETag -> 304, wenn unverändert): sonst schreibt die Ladeseite nach einem
+        // Deploy bis zu 10 min (GitHub Pages: max-age=600) die ALTE Startseite aus dem Browser-Zwischenspeicher ins Dokument
+        const fresh = /\.(?:html|js|css)(?:\?|$)/.test(url);
+        const r = await fetch(url, fresh ? { cache:'no-cache' } : undefined); if(f) f.len = +r.headers.get('content-length') || 0;
         if(f && r.body){ const rd = r.body.getReader(); for(;;){ const { done, value } = await rd.read(); if(done) break; f.got += value.length; update(); } }
         else return await r.text();
       }catch(_){}
