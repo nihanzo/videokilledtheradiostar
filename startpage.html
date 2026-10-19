@@ -31,7 +31,7 @@
   @font-face{ font-family:'Nihanzo Grotesk'; src:url('assets/fonts/nihanzo/NihanzoGrotesk.ttf?v=4') format('truetype');
     font-weight:100 900; font-display:swap; }   /* eine Stärke für alle Gewichte -> kein künstliches Fettmachen */
   :root{
-    --accent:#6F798F;   /* alle Schrift + Rosen-Balken (außer sinc · moir) */
+    --accent:#7A3524;   /* alle Schrift der Startseite = Rosenfarbe (außer Vorhang: sinc · moir, video, Kicker, SCROLL-Rahmen) */
     --font:'Nihanzo Grotesk',system-ui,sans-serif;
     --center:#ECE6EA;   /* einfarbig, hell – kein dunkleres Lila */
     /* sichtbare Blumenbreite links (75 % der früheren linken Kissenbreite) + Gebäudebreite oben rechts */
@@ -41,6 +41,8 @@
     --topW: calc(100vw - var(--flowIn) + 11vh);
     --topReach: calc(var(--topW) * 362 / 3400 * 1.05);
     --bldW: clamp(220px,28vw,520px);
+    --statW: clamp(270px,30.6vw,540px);   /* Statue unten links (10 % kleiner als die frühere 34vw-Fassung) */
+    --madW: clamp(114px,11.4vw,209px);    /* Madonna unten rechts */
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
   html,body{ height:100%; overscroll-behavior:none; }
@@ -71,7 +73,7 @@
   .frame--top{ top:calc(var(--topReach) - var(--topW) * 360 / 2048); left:calc(var(--flowIn) - 11vh); width:var(--topW); height:auto; }
   .frame--bottom{ bottom:0; left:calc(var(--flowIn) - 9.5vh); width:calc(100vw - var(--flowIn) + 9.5vh); height:auto; }
   .frame--left{ top:0; left:0; height:100vh; width:auto; z-index:21;
-    transform:translateX(calc(-100% + var(--flowIn))); }
+    transform:translateX(calc(-100% + 0.9 * var(--flowIn))); }   /* 10 % der sichtbaren Breite weiter links (Rest bleibt an --flowIn) */
   /* Loch-Inneres (Ellipse) – Prozentwerte relativ zum Ring = exakt am Loch */
   /* Ein durchgehender Hintergrund bis unter die Kissen (Rand kaschieren die Kissen) */
   .core{
@@ -79,10 +81,10 @@
     background:var(--center);
     pointer-events:auto;
   }
-  /* Hintergrund (Standard): Glas-Foto (bg-glas.webp, 90° nach links gedreht), 75 % Deckkraft, von den Rahmenbildern
+  /* Hintergrund (Standard): Glas-Foto (bg-glas.webp, 90° nach links gedreht), 65 % Deckkraft, von den Rahmenbildern
      überlappt: oben bis zur höchsten Lücke der kopfüber hängenden Häuser, links bis zur tiefsten Blumen-Einbuchtung,
      unten bis in den deckenden Teil der Bronze (93 %); rechts bis zum Rand. Nur hier definiert (die Würfel-Szene baut es nicht mehr nach); #bgWhite blendet es am Galerie-Ende weg */
-  .bgPic{ position:absolute; pointer-events:none; opacity:.75;
+  .bgPic{ position:absolute; pointer-events:none; opacity:.65;   /* vorher .75 */
     left:calc(var(--flowIn) - 9.5vh); right:0;
     top:calc(var(--topReach) * 0.2);   /* höchste Lücke zwischen den kopfüber hängenden Häusern (gemessen ≈ 21 %) */
     bottom:calc((100vw - var(--flowIn) + 9.5vh) * 346 / 3800 * 0.93);
@@ -110,7 +112,7 @@
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     /* Layout 2.5× so groß wie die sichtbare Kette, per JS auf 1/2.5 verkleinert: Chrome rastert will-change-Ebenen
        mind. in Layoutgröße -> die Kette bleibt beim Heranzoomen bis ~2.5× scharf (4K-Bild, ohne Kosten pro Frame) */
-    width:calc(clamp(360px,41vw,730px) * 2.5); aspect-ratio:819 / 534; z-index:45; pointer-events:none;
+    width:calc(clamp(291.6px,33.21vw,591.3px) * 2.5); aspect-ratio:819 / 534; z-index:45; pointer-events:none;   /* sichtbar 2 × 10 % kleiner als 41vw */
     will-change:transform;
   }
   /* chain-fly.webp = chain-trim (819×534) + 48px Rand mit EINGEBACKENEM Schatten/Kontrast (vorher CSS-filter:
@@ -213,21 +215,21 @@
     box-shadow:15px 0 0 #febc2e, 30px 0 0 #28c840; }
   .sb-cap{ font-size:clamp(16px,2.1vw,30px);      /* Untertitel zentriert unter dem Bild */
     background:rgba(255,255,255,.96); border-radius:9px; padding:4px 13px; }
-  .sb-text span{ font-size:calc(clamp(20px,2.7vw,40px) - 6pt); }   /* 3 × 2pt kleiner */
+  .sb-text span{ font-size:calc(clamp(20px,2.7vw,40px) - 7pt); }   /* 3 × 2pt, dann nochmal 1pt kleiner */
   /* kleine URL-Leiste in der Titelleiste */
   .sb-url{ position:absolute; top:5px; left:58px; right:12px; height:17px; z-index:1;
     background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:5px;
     font:800 10px/17px var(--font); font-style:normal; color:var(--accent);
     text-align:left; padding-left:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .sb-text .plus{ font-size:calc((clamp(20px,2.7vw,40px) - 6pt) * .5); opacity:.85; }   /* halb so groß wie die Wörter (vorher fest ~11 px) */
+  .sb-text .plus{ font-size:calc((clamp(20px,2.7vw,40px) - 7pt) * .5); opacity:.85; }   /* halb so groß wie die Wörter (vorher fest ~11 px) */
 
   /* Sound-Control: Equalizer unten rechts in der Ecke, senffarben (Balken schlagen nach oben aus) */
   .eq{
-    position:fixed; right:20px; bottom:10px;
+    position:fixed; right:20px; bottom:2px;   /* näher am Rand (vorher 10px) */
     z-index:70; pointer-events:auto; cursor:none; padding:8px 10px;    /* Klick = Ton an/aus (Padding = Trefferfläche) */
     display:flex; align-items:flex-end; gap:7px; height:56px;   /* 40px Balken + 2×8px Padding (border-box) */
   }
-  .eq .bar{ width:5px; height:100%; background:#D7AE47; border-radius:2.5px; opacity:.95;
+  .eq .bar{ width:7px; height:100%; background:#C8B796; border-radius:3.5px; opacity:.95;
     transform-origin:50% 100%; transform:scaleY(.6); will-change:transform;
     animation:eqb 780ms ease-in-out infinite alternate; }
   .eq .bar:nth-child(1){ animation-duration:620ms; }
@@ -307,22 +309,26 @@
   /* ---- Ecken (fix am Bildschirmrand, vor dem Ring) ---- */
   .corner{ position:fixed; z-index:40; pointer-events:none; user-select:none; }
   /* Marmor: 25,7% transparent oben -> hoch in die Ecke ziehen, links ist schon bündig */
-  .corner--marble{ top:0; left:0; width:clamp(290px,34vw,620px); transform:translateY(-25.7%);
+  .corner--marble{ top:0; left:0; width:clamp(335px,39.27vw,716px); transform:translateY(-25.7%);   /* +5 %, dann nochmal +10 % (vorher 34vw) */
     filter:drop-shadow(0 8px 22px rgba(0,0,0,.16)); }
-  /* Statue: größer, Sockel bündig unten (6,1% transparent unten), etwas mehr nach links */
-  .corner--statue{ bottom:0; left:0; width:clamp(300px,34vw,600px); transform:translate(-23%,6.1%);
+  /* Statue: Sockel bündig unten (6,1% transparent unten); 10 % kleiner als zuvor (34vw) und 10 % ihrer Breite weiter links (−23 % -> −33 %) */
+  .corner--statue{ bottom:0; left:0; width:var(--statW); transform:translate(-33%,6.1%);
     filter:drop-shadow(0 10px 26px rgba(0,0,0,.22)); }
+  /* Madonna mit Kind (Bronze; Foto des Users, freigestellt, auf den Inhalt beschnitten, 480 breit): klein unten rechts, unten und
+     rechts bündig; liegt UNTER dem Ton-Knopf (z70); „legal notice“ steht links daneben */
+  .corner--madonna{ bottom:0; right:0; width:var(--madW); height:auto; transform:translateX(8px);   /* 8 px über den Rand hinaus */
+    filter:drop-shadow(0 8px 20px rgba(0,0,0,.22)); }
   .corner--building{ top:0; right:0; width:var(--bldW);
     filter:drop-shadow(0 8px 22px rgba(0,0,0,.18)); }
   /* Lage der Figur im Bronze-Band (frame-bronze.webp 3800×346 = alte 403er Fassung oben 57 px tiefer beschnitten, unten
      bündig -> alle Lagen ab Unterkante bleiben gleich: Kopf von 43,3 % bis 55 %, Mitte 48,4 %; Band beginnt bei
-     flowIn − 9.5vh) und der Statue (sichtbare rechte Kante = 73,9 % der Bildbreite, Bild um 23 % nach links versetzt) */
+     flowIn − 9.5vh) und der Statue (sichtbare rechte Kante = 73,9 % der Bildbreite, Bild um 33 % nach links versetzt) */
   .corner--roses, .sip{ --bandL:calc(var(--flowIn) - 9.5vh); --figX:calc(var(--bandL) + 0.484 * (100vw - var(--bandL)));
-    --figL:calc(var(--bandL) + 0.433 * (100vw - var(--bandL))); --statR:calc(0.509 * clamp(300px,34vw,600px)); }
+    --figL:calc(var(--bandL) + 0.433 * (100vw - var(--bandL))); --statR:calc(0.409 * var(--statW)); }
   /* Rosen in der Vase: klein, unten links dicht am Statuen-Sockel (statue.webp: rechte Kante unten 0,61−0,70 der Bildbreite,
-     Bild um 23 % nach links versetzt -> 0,38−0,47 der Statuenbreite; Blüten dürfen leicht vor die Statue ragen) */
+     Bild um 33 % nach links versetzt -> 0,28−0,37 der Statuenbreite; Blüten dürfen leicht vor die Statue ragen) */
   .corner--roses{ bottom:.3vh; height:clamp(63px,11.3vh,126px); width:auto;
-    left:calc(0.42 * clamp(300px,34vw,600px)); transform:translateY(3%);
+    left:calc(0.32 * var(--statW)); transform:translateY(3%);   /* wandert mit der Statue */
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.2)); }
   /* Ein Glas schwebt schräg über dem Kopf der Figur im Bronze-Band: Stiel = vom User gezeichnete Linie (Fuß unten links,
      Kelch oben rechts, 64°); das Glas endet am 3. User-Strich, dann 5 px (bei 1000 px Breite) tiefer: Box = 0×0-Punkt
@@ -330,10 +336,33 @@
      Schatten am Rahmen-Div, damit er trotz Drehung nach unten fällt */
   .sip{ position:fixed; z-index:40; pointer-events:none; width:0; height:0;
     --bandW:calc(100vw - var(--bandL)); --gh:calc(var(--bandW) * 0.037);   /* −20 % */
-    left:calc(var(--bandL) + 0.4984 * var(--bandW)); bottom:calc(var(--bandW) * 0.1061 * 0.626);   /* zuletzt 3 px links, 5 px hoch (bei 1000 px) */
+    --u:calc(var(--bandW) / 3800);   /* Bildschirm-px je Pixel von frame-bronze.webp */
+    left:calc(var(--bandL) + 0.4984 * var(--bandW) + 2px); bottom:calc(var(--bandW) * 0.1061 * 0.626);   /* zuletzt 3 px links, 5 px hoch (bei 1000 px), dann +2 px rechts */
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.18)); }
   .sip img{ position:absolute; left:calc(var(--gh) * -0.2233); top:calc(var(--gh) * -0.02); height:var(--gh); width:auto;
     transform-origin:50% 2%; transform:rotate(64deg); }
+  /* Tropfen: kleine weiße, längliche Tropfen bilden sich langsam an der tiefsten Stelle des Glasrands (frame-bronze.webp
+     ~1895/126.5), lösen sich und fallen SENKRECHT (beschleunigend, im Fallen etwas gestreckt) bis auf Mundhöhe (~145), wo sie
+     verschwinden. --u = Bildschirm-px je Bandbild-Pixel (3800 breit); Ursprung = .sip-Punkt (1893.9/93.7); 2 Tropfen, je 2.6 s, versetzt */
+  .sip .drop{ position:absolute; --dw:max(1.6px, calc(var(--u) * 4)); width:var(--dw); height:calc(var(--dw) * 2.2);
+    left:calc(var(--u) * 1.1 - var(--dw) / 2); top:calc(var(--u) * 32.6); transform-origin:50% 0; opacity:0;
+    background:radial-gradient(ellipse at 42% 62%, #fff 0 40%, rgba(255,255,255,.88) 68%, rgba(232,236,240,.75));
+    border-radius:50% 50% 50% 50% / 62% 62% 38% 38%;   /* Tropfenform: oben spitzer, unten rund */
+    animation:drip 2.6s linear infinite; }
+  .sip .drop + .drop{ animation-delay:-1.3s; }
+  @keyframes drip{
+    0%{ transform:translate(0, calc(var(--u) * 0.00)) scale(0.15, 0.15); opacity:0; }
+    8%{ transform:translate(0, calc(var(--u) * 0.00)) scale(0.3, 0.3); opacity:1; }
+    45%{ transform:translate(0, calc(var(--u) * 0.00)) scale(1, 1); opacity:1; }
+    50%{ transform:translate(0, calc(var(--u) * 0.00)) scale(0.95, 1.1); opacity:1; }
+    56%{ transform:translate(0, calc(var(--u) * 0.35)) scale(0.934, 1.139); opacity:1; }
+    64%{ transform:translate(0, calc(var(--u) * 1.90)) scale(0.913, 1.192); opacity:1; }
+    72%{ transform:translate(0, calc(var(--u) * 4.69)) scale(0.892, 1.245); opacity:1; }
+    80%{ transform:translate(0, calc(var(--u) * 8.73)) scale(0.871, 1.297); opacity:1; }
+    88%{ transform:translate(0, calc(var(--u) * 14.00)) scale(0.85, 1.35); opacity:1; }
+    100%{ transform:translate(0, calc(var(--u) * 15.50)) scale(0.3, 0.3); opacity:0; }
+  }
+  @media (prefers-reduced-motion:reduce){ .sip .drop{ animation:none; } }
   /* Boxsack: hängt UNTER dem Gebäude – die Kette ist an dessen Decke (Unterseite, building.webp 1536×1024:
      Aufhängung bei Bildpunkt 1280/720, mitten in der Deckenfläche; Unterkante dort bei ~y 838) befestigt.
      Nullpunkt = Aufhängung. --u = Pixel pro Bildpixel der Boxsack-Quelle (1024×1536: Aufhängung 520/80, Ring 523/652).
@@ -362,9 +391,9 @@
   .loopFade{ position:fixed; inset:0; z-index:19; background:#fff; opacity:0; pointer-events:none; }
 
   /* alter Cursor (springende Figur) wie im Intro */
-  /* ---- Legal notice: Link unten rechts (links neben dem Ton-Knopf) + Mac-Browserfenster (GSAP Draggable) ---- */
-  .legalLink{ position:fixed; right:117px; bottom:16px; z-index:80; pointer-events:auto;
-    font-family:var(--font); font-size:12px; letter-spacing:.03em; text-transform:lowercase; color:#EAD39B;
+  /* ---- Legal notice: Link unten rechts (links neben der Madonna) + Mac-Browserfenster (GSAP Draggable) ---- */
+  .legalLink{ position:fixed; right:calc(0.95 * var(--madW) + 5px); bottom:8px; z-index:80; pointer-events:auto;   /* 10 px links neben den Händen der Madonna */
+    font-family:var(--font); font-size:12px; letter-spacing:.03em; text-transform:lowercase; color:#C8B796;
     text-decoration:underline; text-underline-offset:.25em; text-shadow:0 1px 3px rgba(0,0,0,.35); transition:opacity .6s ease; }
   .curtain-on .legalLink{ opacity:0; visibility:hidden; }        /* erst nach dem Vorhang, wie der Fortschrittsbalken */
   /* öffnet sich über der unteren rechten Bildschirmhälfte; z unter der Cursor-Figur (9999) */
@@ -411,28 +440,35 @@
   #curtain{ position:absolute; inset:0; z-index:9990; }
   #curtainGl{ position:absolute; inset:0; background:#fff; }   /* Vorhang ganz weiß */
   #curtain .hero{ position:absolute; inset:0; display:grid; place-items:center; }
+  /* Einheitlich erscheinen: Grünkohl, re, Schriftzüge, Kicker, SCROLL-Rahmen und Cursor-Figur bleiben unsichtbar (.prep), bis
+     beide Bilder decodiert und beide Schriften geladen sind, und blenden dann GEMEINSAM ein (vorher kam alles nacheinander) */
+  #curtain .hero, #curtain .scrollRing{ transition:opacity .45s ease; }
+  #curtain.prep .hero, #curtain.prep .scrollRing{ opacity:0; }
+  html:has(#curtain.prep) #cursor{ opacity:0 !important; }
+  html:has(#curtain) #cursor{ transition:opacity .45s ease; }
   #curtain .hero__wrap{ position:relative; width:min(1150px,94vw); }
+  #curtain .hero__sway{ position:relative; transform-origin:46.23% 48.07%; will-change:transform; }   /* Drehpunkt = Schwerpunkt des Grünkohls */
   #curtain .hero__kale{ width:100%; height:auto; display:block; filter:drop-shadow(0 18px 30px rgba(0,0,0,.18)); }
   /* „endless scroll page“ mittig über dem Grünkohl (Schrift + Farbe wie der SCROLL-Rahmen) */
   #curtain .hero__kicker{ position:absolute; left:50%; bottom:calc(100% + clamp(10px, 3.2vh, 34px)); transform:translateX(-50%);
     white-space:nowrap; font-family:'Turret Road', var(--font); font-weight:300; text-transform:lowercase;
-    font-size:clamp(16px, 1.9vw, 30px); letter-spacing:.08em; color:#BB4F4E; pointer-events:none; }
+    font-size:clamp(16px, 1.9vw, 30px); letter-spacing:.08em; color:#61708F; pointer-events:none; }
   /* SCROLL-Rahmen: Versalien in der Farbe des „re“, einmal rings um den Bildschirmrand (SVG-Textpfad, per JS gebaut) */
   #curtain .scrollRing{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
-  #curtain .scrollRing text{ font-family:'Turret Road', var(--font); font-weight:300; text-transform:none; fill:#BB4F4E; }
+  #curtain .scrollRing text{ font-family:'Turret Road', var(--font); font-weight:300; text-transform:none; fill:#61708F; }
   #curtain .hero__title{ position:absolute; left:50%; top:46%; transform:translate(-50%, calc(-50% - 16px));
     display:flex; align-items:center; justify-content:center; gap:.04em; filter:drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
   /* Schriftzüge als echter Text (vorher SVG-Masken type-*.svg in der alten Schrift); Größe so, dass die x-Höhe der
      alten Schriftzüge erhalten bleibt (SVG: x-Höhe 500/760 der Kastenhöhe, Nihanzo Grotesk x-Höhe 0.56 em) */
   #curtain .word{ font-family:var(--font); font-weight:800; line-height:1; letter-spacing:-.01em;
-    color:#EFCE80; font-size:clamp(54px,11.75vw,136px); }                     /* sinc · moir = Senf 200 */
-  #curtain .word.video{ color:#BB4F4E; font-size:clamp(28px,5.87vw,68px); }   /* video = Farbe des „re“ (Mittelton re.png) */
-  #curtain .re{ height:clamp(64px,14vw,168px); width:auto; display:block; margin:0 .01em; align-self:center; }
+    color:#C8B796; font-size:clamp(54px,11.75vw,136px); }                     /* sinc · moir */
+  #curtain .word.video{ color:#61708F; font-size:clamp(28px,5.87vw,68px); }   /* video = Farbe des „re“ (Blaugrau, re-blau.webp) */
+  #curtain .re{ height:clamp(64px,14vw,168px); width:auto; display:block; margin:0 calc(.01em + 5px) 0 .01em; align-self:center; }   /* rechts 5 px mehr Luft zu „moir“ */
   #curtain .hero__subtitle{ position:absolute; left:50%; top:85%; transform:translate(-50%, 4px);
     display:flex; align-items:center; justify-content:center; }   /* ohne Schatten */
 
   /* Scroll-Strecke: Kamera-Fahrt (~2.6) + Galerie (~13.0, inkl. Lauf-Sequenz) */
-  .scroll-space{ position:relative; z-index:0; height:5860vh; }   /* = (CAM_VH + GAL_VH)·100vh */
+  .scroll-space{ position:relative; z-index:0; height:5460vh; }   /* = (CAM_VH + GAL_VH)·100vh */
 
 </style>
 <!-- Import-Map MUSS vor jedem Modul-Laden stehen: sonst (z. B. bei ?at=… springt der Director sofort ins Glas)
@@ -465,12 +501,13 @@
 
     <!-- Galerie: zentrales Motiv, wechselt Original <-> Skizze (gleiche Größe) -->
     <div class="centerpic" id="centerpic">
-      <img class="cp cp--orig"   id="cpOrig"   src="assets/img/metalman.webp?v=2"        alt="Metall-Figur" />
+      <img class="cp cp--orig"   id="cpOrig"   src="assets/img/metalman.webp?v=3"        alt="Metall-Figur" />
       <!-- Kasten 1 enthüllt das rote Buntstift-Bild (mit Bleistift-Geräusch), Kasten 3 das Anime-Bild (ohne Ton); beide aus
            raw *-originalmasse.png (2250×3000), per .claude/video/register_figure.py auf den Umriss des Originals verformt
-           (Deckung 99,6 %), dann mit demselben Rahmen wie metalman.webp beschnitten (628,417)–(1943,2503) -> 822×1300 -->
-      <img class="cp cp--sketch" id="cpSketch" src="assets/img/metalman-buntstift.webp?v=3" alt="Metall-Figur als roter Buntstift" />
-      <img class="cp cp--sketch" id="cpAnime"  src="assets/img/metalman-anime.webp?v=3"     alt="Metall-Figur im Anime-Stil" />
+           (Deckung 99,6 %), dann mit demselben Rahmen wie metalman.webp beschnitten (628,417)–(1943,2503) -> 822×1300.
+           Hörner-Unterkanten in allen drei Bildern gerade (Spitze bis Kopf): .claude/video/straighten_horns.py + straighten_horns2.py -->
+      <img class="cp cp--sketch" id="cpSketch" src="assets/img/metalman-buntstift.webp?v=4" alt="Metall-Figur als roter Buntstift" />
+      <img class="cp cp--sketch" id="cpAnime"  src="assets/img/metalman-anime.webp?v=4"     alt="Metall-Figur im Anime-Stil" />
     </div>
 
     <!-- Läufer: Sprite-Sheet-Animation (aufstehen + rennen, folgt nach links) -->
@@ -519,31 +556,35 @@
     </div>
     <div class="slidebox" id="box2">
       <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
-      <div class="sb-inner sb-text"><em class="sb-url">https://</em><span>videoediting</span><span class="plus">+</span><span>storytelling</span></div>
+      <div class="sb-inner sb-text"><em class="sb-url">https://remoir.art</em><span>videoediting</span><span class="plus">+</span><span>storytelling</span></div>
     </div>
     <div class="slidebox" id="box3">
       <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
-      <div class="sb-inner sb-text"><em class="sb-url">https://</em><span>davinci</span><span class="plus">+</span><span>Photoshop</span></div>
+      <div class="sb-inner sb-text"><em class="sb-url">https://remoir.art</em><span>davinci</span><span class="plus">+</span><span>Photoshop</span></div>
     </div>
     <div class="slidebox" id="box4">
       <img class="thread" src="assets/img/rope.webp" alt="" aria-hidden="true" />
-      <div class="sb-inner sb-text"><em class="sb-url">https://</em><span>Blender</span><span class="plus">+</span><span>Backend</span><span class="plus">+</span><span>AI Interface</span></div>
+      <div class="sb-inner sb-text"><em class="sb-url">https://remoir.art</em><span>Blender</span><span class="plus">+</span><span>Backend</span><span class="plus">+</span><span>AI Interface</span></div>
     </div>
 
     <!-- Schreib-Animation (1. Kreis links) -->
     <div class="typer" id="typer"></div>
 
     <!-- Vorhang-Intro: Creme (WebGL) wird weggeschoben + Grünkohl/Titel; wird danach entfernt -->
-    <div id="curtain" aria-hidden="true">
+    <div id="curtain" class="prep" aria-hidden="true">   <!-- prep: Inhalt unsichtbar, bis alles bereit ist (s. curtainIntro) -->
       <div id="curtainGl"></div>
       <div class="hero" id="cHero">
         <div class="hero__wrap">
           <!-- über dem Grünkohl, mittig: Turret Road wie der SCROLL-Rahmen, klein geschrieben -->
           <div class="hero__kicker">endless scroll page</div>
-          <!-- Grünkohl = Foto des Users (raw IMG-20200207-WA0000_inPixio.png, freigestellt, auf den Inhalt beschnitten 1383×571, WebP q95) -->
-          <img class="hero__kale" src="assets/img/kale-foto.webp?v=2" width="1383" height="571" alt="" fetchpriority="high" />
-          <div class="hero__title">
-            <span class="word sinc">sinc.</span><img class="re" src="assets/img/re.webp" alt="" /><span class="word moir">moir</span>
+          <!-- Grünkohl + Schriftzug wiegen sich gemeinsam ±5° (wie raw original-5grad-sanft-fluessig.webp, s. Skript „Wiegen“):
+               Grünkohl = Bild 1 dieser WebP (auf den Inhalt beschnitten 1356×566, WebP q90), re = raw re_farbe_61708F.png ohne
+               Boden-Schatten (.claude/video/re_noshadow.py) -->
+          <div class="hero__sway" id="cSway">
+            <img class="hero__kale" src="assets/img/kale-5grad.webp" width="1356" height="566" alt="" fetchpriority="high" />
+            <div class="hero__title">
+              <span class="word sinc">sinc.</span><img class="re" src="assets/img/re-blau.webp" width="660" height="420" alt="" /><span class="word moir">moir</span>
+            </div>
           </div>
           <div class="hero__subtitle"><span class="word video">video</span></div>
         </div>
@@ -575,7 +616,8 @@
     <img class="corner corner--statue"   src="assets/img/statue.webp"   alt="Statue" />
     <img class="corner corner--building" src="assets/img/building.webp" alt="Gebäude" />
     <img class="corner corner--roses"    src="assets/img/roses-vase.webp" alt="Rosen in der Vase" />
-    <div class="sip" aria-hidden="true"><img src="assets/img/glass-clink.webp" alt="" /></div>
+    <img class="corner corner--madonna"  src="assets/img/madonna-ecke.webp" width="480" height="556" alt="Madonna mit Kind (Bronze)" />
+    <div class="sip" aria-hidden="true"><img src="assets/img/glass-clink.webp" alt="" /><i class="drop"></i><i class="drop"></i></div>
 
     <!-- Boxsack: hängt neben dem Gebäude, pendelt nur, wenn die Maus drüberfährt (js/boxsack.js) -->
     <div class="bag" id="bag" aria-hidden="true">
@@ -625,6 +667,20 @@
     window.__curtainOn = true; document.documentElement.classList.add('curtain-on');
     const cl = (v,a,b)=>Math.max(a,Math.min(b,v)), smooth = (t)=>t*t*(3-2*t);
     const hero = document.getElementById('cHero');
+    // Wiegen: Grünkohl + Schriftzug drehen sich sanft ±5° hin und her und schwingen dabei leicht auf und ab – nachgebaut aus
+    // raw original-5grad-sanft-fluessig.webp (400 Bilder à 20 ms = 8 s, starr gedreht; Winkel + Schwerpunkt je Bild gemessen,
+    // als Fourier-Reihe, px im 1356×566-Bild). Web Animations -> läuft im Compositor, bleibt flüssig, auch wenn die Seite rechnet.
+    const sway = document.getElementById('cSway');
+    if(sway.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const kf = [], N = 160, s = Math.sin;
+      for(let n = 0; n <= N; n++){
+        const f = 2*Math.PI*n/N;
+        const x = 0.089 + 1.126*s(f) - 0.090*Math.cos(2*f) + 2.400*s(3*f) + 0.700*s(5*f);
+        const y = 0.020 - 4.109*s(f) - 0.025*Math.cos(2*f) + 1.800*s(4*f) + 0.500*s(7*f);
+        kf.push({ transform:`translate(${(x/13.56).toFixed(4)}%, ${(y/5.66).toFixed(4)}%) rotate(${(5*s(f)).toFixed(4)}deg)` });
+      }
+      sway.animate(kf, { duration:8000, iterations:Infinity });
+    }
     // Scroll-Weg für beide Phasen
     const DIST = ()=>1.4*innerHeight;
     let acc = 0, p = 0, done = false, ty = null;
@@ -683,6 +739,17 @@
       if(!ringShown && (ringFontReady() || performance.now() - ringT0 > 2500)){ ringShown = true; layoutRing(); ring.style.visibility = 'visible'; }
     };
     const ringWatch = setInterval(ringTick, 120); ringTick();   // Schrift schon da (Ladeseite hat sie geholt) -> Rahmen sofort
+
+    // Einheitlich erscheinen (CSS #curtain.prep): erst wenn Grünkohl + re decodiert und beide Schriften geladen sind (spätestens
+    // nach 2.5 s), Rahmen mit der echten Schrift auslegen und alles zusammen einblenden
+    const ready = [...el.querySelectorAll('img')].map((i)=>i.decode ? i.decode().catch(()=>{}) : Promise.resolve());
+    if(document.fonts) ready.push(document.fonts.load('800 50px "Nihanzo Grotesk"').catch(()=>{}),
+                                  document.fonts.load('300 20px "Turret Road"').catch(()=>{}));
+    let shown = false;
+    const show = ()=>{ if(shown || done) return; shown = true;
+      layoutRing(); ringShown = true; ring.style.visibility = 'visible'; probeW = probe.offsetWidth;
+      requestAnimationFrame(()=>el.classList.remove('prep')); };
+    Promise.all(ready).then(show); setTimeout(show, 2500);
 
     const wrap = hero.querySelector('.hero__wrap'), A_END = 0.38;   // 1) rechts -> Grünkohl  2) oben + unten -> ganz weg
     function finish(){
@@ -894,7 +961,8 @@
   function type(){
     twStartAt = performance.now();
     const render=(n)=>{
-      typer.textContent = TEXT.slice(0, n);
+      typer.textContent = '';
+      for(const c of TEXT.slice(0, n)){ const s = document.createElement('span'); s.className = 'ch'; s.textContent = c; typer.appendChild(s); }   // je Buchstabe ein span (Kette überdeckt einzeln)
       const caret = document.createElement('span');
       caret.className = 'caret'; caret.textContent = ' ';
       typer.appendChild(caret);
@@ -987,20 +1055,23 @@
     chainWrap.style.transformOrigin = (CHX*100)+'% '+(CHY*100)+'%';
     // Maße der Startsequenz EINMAL messen (und bei resize) statt in jedem Frame (vermeidet erzwungene Layouts)
     const CH_K=2.5;                         // Layout-Überhöhung der Kette (siehe .chainWrap)
+    const START_K=0.81;                     // Kette + Kamera am Anfang 2 × 10 % kleiner (CSS-Breite ×0.81); Ende der Fahrt unverändert
     const SG={CX:0,CY:0,loopX:0,loopY:0,camW:0,camH:0,chTx:0,chTy:0};
     function measureStart(){
       SG.CX=innerWidth/2; SG.CY=innerHeight/2;
       const LW=chainWrap.offsetWidth, LH=chainWrap.offsetHeight;          // Layoutgröße (2.5×)
       const cwW=LW/CH_K, cwH=LH/CH_K;                                     // sichtbare Größe bei Zoom 1
-      SG.loopX=SG.CX+(CHX-0.5)*cwW; SG.loopY=SG.CY+(CHY-0.5)*cwH;       // größtes Kettenglied (Kamera sitzt darin)
+      // größtes Kettenglied (Kamera sitzt darin); die kleinere Kette um die halbe Verkleinerung nach links -> ihr linkes Ende
+      // bleibt, wo es war: direkt am „scroll“ von „enjoy your scroll“
+      SG.loopX=SG.CX+(CHX-0.5)*cwW-0.5*cwW*(1/START_K-1); SG.loopY=SG.CY+(CHY-0.5)*cwH;
       // Box-Ecke liegt bei (CX,CY) (left/top 50%); Verschiebung so, dass das Kettenloch (= transform-origin) auf loopX/Y liegt
-      SG.chTx=SG.loopX-SG.CX-CHX*LW; SG.chTy=SG.loopY-SG.CY-CHY*LH;
+      SG.chTx=SG.loopX-SG.CX-CHX*LW; SG.chTy=SG.loopY-SG.CY-CHY*LH; SG.LW=LW; SG.LH=LH;
       SG.camW=cam.offsetWidth; SG.camH=SG.camW*917/1111;                  // unabhängig davon, ob das Bild schon geladen ist
     }
     measureStart(); addEventListener('load', measureStart, {once:true});
 
     // Anteil der Kamerafahrt an der Gesamtstrecke (Rest = Galerie); langsamerer Scroll
-    const CAM_VH=2.6, GAL_VH=56.0, F=CAM_VH/(CAM_VH+GAL_VH);   // GAL_VH 38 + 14 für Fahrt + Würfel (HRT 16, 2 davon überlappen die Fotos) + 2 Endlos-Übergang + 2 Reifen
+    const CAM_VH=2.6, GAL_VH=52.0, F=CAM_VH/(CAM_VH+GAL_VH);   // GAL_VH 38 + 10 für Fahrt + Würfel (HRT 12, 2 davon überlappen die Fotos) + 2 Endlos-Übergang + 2 Reifen
     // Galerie (g = 0..1): Video langsam nach links raus; Zug aus 4 gleichen Kästen, box1 führt (früher)
     // TRAIN_END = Zug (inkl. letzter Kasten) hat den Viewport verlassen
     const K=13/GAL_VH;                               // Werte waren für GAL 13 getunt -> gleiche Geschwindigkeit in vh
@@ -1015,7 +1086,7 @@
     const GLASS_SPAN=3.2/GAL_VH;                   // Anflug + Umdrehung des Glases (in g)
     const CAR_SPAN=9.0/GAL_VH;                     // Karussell: eine volle Drehung über 9 Bildschirmhöhen (langsamer)
     const PHO_SPAN=10.0/GAL_VH;                    // Foto-Galerie: 10 Bilder über 10 Bildschirmhöhen
-    const HRT_SPAN=16.0/GAL_VH;                    // Würfel-Szene: Objekte erscheinen + Kamerafahrt an ihnen vorbei bis zum Würfel
+    const HRT_SPAN=12.0/GAL_VH;                    // Würfel-Szene: Objekte erscheinen + Kamerafahrt an ihnen vorbei bis zum Würfel (vorher 16)
     const HRT_LEAD=0.2*PHO_SPAN;                   // davon überlappt: beginnt, während das letzte Foto verschwindet (ph 0.8..1)
     const LOOP_VH=1.6;                             // Endlos-Scroll: Weißblende nach dem Würfel, dann Sprung an den Anfang
     const HRT_EARLY=0.038*PHO_SPAN;                // Figuren erscheinen bei ph 0.962 = noch 5 % des letzten Fotos über dem Bronze-Band (gemessen bei 1000×553, Band 3800×346)
@@ -1027,6 +1098,7 @@
     const PAR=[1.5,1.332,1.5,1.5,1.5,1.5,1.783,1.777,1.48,1.48];   // Seitenverhältnisse der Fotos
     let photosLoaded=false;
     const cards=[...document.querySelectorAll('.vcard')];
+    const cardParent=cards[0].parentNode, cardAnchor=cards[cards.length-1].nextSibling; let cardOrderKey='';
     // versetzte, „willkürliche" Anordnung: Winkel°, Höhe (Anteil Loch-Halbhöhe), Größe, Radius
     const CARD=[{a:8,y:-0.42,w:1.00,r:1.00},{a:66,y:0.30,w:0.78,r:0.90},{a:121,y:-0.08,w:1.18,r:1.06},
                 {a:183,y:0.44,w:0.88,r:0.96},{a:236,y:-0.30,w:0.82,r:1.10},{a:302,y:0.12,w:1.06,r:0.88}];
@@ -1083,17 +1155,55 @@
     })();
 
     const CAM_K=0.85*0.95;                                // Kamera durchgehend kleiner (−15 %, dann nochmal −5 %; Verhältnis gleich -> Kette unverändert)
-    const P=1100, SC0=0.09*CAM_K, SCEND=4.30*CAM_K, ZBASE=SCEND/SC0;
+    const P=1100, SC0=0.09*CAM_K*START_K, SCEND=4.30*CAM_K, ZBASE=SCEND/SC0;   // Start kleiner, Ende gleich -> Zoom etwas stärker
     // Start wie früher sofort, aber weich: Tempo wächst über die ersten SLOW_A der Kamerastrecke von 0 an (SLOW_D = SLOW_A/2
     // -> Anfangstempo 0, danach gleichmäßig, Ende unverändert: slowStart(1) = 1)
     const SLOW_A=0.22, SLOW_D=SLOW_A/2;
     const slowStart=(p)=>{ const u=Math.min(p/SLOW_A,1); return (p - SLOW_D*(1-(1-u)*(1-u)))/(1-SLOW_D); };
     const CUT=0.80;   // Auslöser-Moment = harter Schnitt: Kamera + Kette weg, Video im Loch da
 
+    // „enjoy your scroll“ verschwindet erst, wenn die wachsende Kette es überdeckt: Buchstabe für Buchstabe von rechts (ganze
+    // Buchstaben-spans unsichtbar), sobald die linke Kante der Kette AUF TEXTHÖHE über die Mitte des Buchstabens kommt. Linke Kante je Bildzeile einmal aus dem
+    // Alpha-Kanal von chain-fly-4k.webp gelesen (verkleinert, nur deckende Kette > 160, ohne den eingebackenen Schatten).
+    let chainLeft=null, typerBox=null, letterKey='';
+    function readChainLeft(){
+      if(chainLeft || !chainImg.complete || !chainImg.naturalWidth) return;
+      const w=366, h=Math.round(w*chainImg.naturalHeight/chainImg.naturalWidth), c=document.createElement('canvas');
+      c.width=w; c.height=h; const g=c.getContext('2d', {willReadFrequently:true}); g.drawImage(chainImg,0,0,w,h);
+      const d=g.getImageData(0,0,w,h).data, L=new Float32Array(h).fill(Infinity);
+      for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(d[(y*w+x)*4+3]>160){ L[y]=x/w; break; }
+      chainLeft=L;
+    }
+    chainImg.complete ? readChainLeft() : chainImg.addEventListener('load', readChainLeft, {once:true});
+    function coverTyper(Z){
+      const ch=typer.querySelectorAll('.ch'), shown=ch.length;
+      if(!chainLeft || !shown) return;
+      // Lage der Buchstaben (fest stehender Text) nur neu messen, wenn sich Text oder Fenstergröße ändern
+      const key=shown+'/'+innerWidth+'/'+innerHeight;
+      if(!typerBox || key!==letterKey){
+        letterKey=key; const r=typer.getBoundingClientRect(), mids=[];
+        ch.forEach((s)=>{ const b=s.getBoundingClientRect(); mids.push((b.left+b.right)/2); });
+        typerBox={top:r.top, bottom:r.bottom, mids};
+      }
+      // Bildschirm-Rechteck des Kettenbilds (Box-Ecke bei CX/CY, Zoom s um den Ursprung CHX/CHY, Bild mit Rand: s. .chain)
+      const s=Z/CH_K, bw=s*SG.LW, bh=s*SG.LH;
+      const bx=SG.CX+CHX*SG.LW+SG.chTx-CHX*bw, by=SG.CY+CHY*SG.LH+SG.chTy-CHY*bh;
+      const iw=1.11722*bw, ih=1.17978*bh, il=bx-0.05861*bw, it=by-0.08989*bh, H=chainLeft.length;
+      const t0=typerBox.top+(typerBox.bottom-typerBox.top)*0.25, t1=typerBox.bottom-(typerBox.bottom-typerBox.top)*0.25;   // Schriftband
+      const r0=Math.max(0,Math.floor((t0-it)/ih*H)), r1=Math.min(H-1,Math.ceil((t1-it)/ih*H));
+      let u=Infinity; for(let y=r0;y<=r1;y++) if(chainLeft[y]<u) u=chainLeft[y];
+      const cover = Z>3 ? -Infinity : il+u*iw;                  // ab 3-fachem Zoom liegt der Text längst unter der Kette
+      // ganze Buchstaben ausblenden (nicht abschneiden: sonst bleibt z. B. der Bogen des j unter dem n stehen)
+      let any=false;
+      ch.forEach((sp,k)=>{ const hide=typerBox.mids[k]>=cover; any=any||hide; const v=hide?'hidden':'';
+        if(sp.style.visibility!==v) sp.style.visibility=v; });
+      const caret=typer.querySelector('.caret'); if(caret) caret.style.visibility=any?'hidden':'';
+    }
+
     function applyCamera(p){
       // EIN gemeinsamer exponentieller Zoom-Faktor: Kette und Kamera wachsen im festen Verhältnis (gleichmäßig wirkend)
       const Z = Math.pow(ZBASE, p);
-      typer.style.opacity = String(1 - cl((p-0.03)/0.09,0,1));   // „enjoy your scroll“ blendet erst etwas später aus
+      typer.style.opacity = '1'; coverTyper(Z);             // „enjoy your scroll“ verschwindet Buchstabe für Buchstabe unter der Kette
       const cut = p>=CUT;                                   // Auslöser = harter Schnitt aufs Video
       // Kette: 2D-Zoom um das Kettenloch = exakt die frühere Perspektiv-Projektion (translateZ), ohne 3D-Kontext
       chainWrap.style.transform = `translate(${SG.chTx.toFixed(1)}px,${SG.chTy.toFixed(1)}px) scale(${(Z/CH_K).toFixed(5)})`;
@@ -1354,6 +1464,7 @@
         // dreht mit der Kopfüber-Rotation (θ = t·2π) mit -> bei t=0.5 zeigt die Öffnung nach unten
         const glassH=0.4*Hc*scG, th0=gt2*Math.PI*2;
         const rimY=CYc+push-0.5*glassH*Math.cos(th0), rimR=0.236*glassH;
+        const cardZ=cards.map(()=>-Infinity);
         cards.forEach((c,i)=>{
           const u=cl((g-emStart(i))/EM_DUR,0,1);
           if(u<=0){ c.style.opacity='0'; c.style.visibility='hidden'; return; }
@@ -1370,12 +1481,17 @@
           c.style.transformOrigin='0 0';
           c.style.transform=`translate(${(cx-w*s/2).toFixed(1)}px,${(cy-w*0.75*s/2).toFixed(1)}px) scale(${s.toFixed(3)})`;
           c.style.zIndex = z>0 ? '19' : '17';                          // vorn vor dem Glas, hinten dahinter
+          cardZ[i]=z;
           const back=cl(-z/(R*1.1),0,1)*e;
           c.style.setProperty('--milk',(back*0.55).toFixed(2));
           c.style.filter = back>0.02 ? `blur(${(back*2.2).toFixed(1)}px)` : 'none';
           c.style.opacity=String(cl(u*5,0,1));
           if(u>=1) outZ.push([i,z]);
         });
+        // innerhalb derselben Ebene (z-index 19 vorn / 17 hinten) entscheidet die HTML-Reihenfolge: Karten nach Tiefe sortieren,
+        // damit nähere Videos immer vor weiter entfernten liegen (nur umhängen, wenn sich die Reihenfolge ändert)
+        const order=cards.map((_,i)=>i).sort((a,b)=>cardZ[a]-cardZ[b]), key=order.join();
+        if(key!==cardOrderKey){ cardOrderKey=key; for(const i of order) cardParent.insertBefore(cards[i], cardAnchor); }
       }
       // nur das vorderste Video ist anklickbar (und nur solange der Player zu ist)
       // die DREI vordersten Videos sind anklickbar (nur solange der Player zu ist)

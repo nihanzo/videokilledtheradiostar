@@ -31,6 +31,9 @@
   body{ background:#fff; overflow:hidden; font-family:var(--font); font-weight:800; text-transform:lowercase; }   /* alles klein */
 
   #fx{ position:fixed; inset:0; width:100%; height:100%; z-index:9; pointer-events:none; }   /* Feuerwerk */
+  /* Erscheinen: alles unsichtbar, bis die Schrift da ist (sonst springen Knopf-Texte und Kabel beim Schrift-Tausch), dann weich einblenden */
+  .pb, .enter, .cable{ transition:opacity .45s ease; }
+  body.boot .pb, body.boot .enter, body.boot .cable{ opacity:0; }
 
   /* USB-C-Kabel (z4): Powerbank (z7) und Buttons (z7) decken die Metallspitzen ab -> Stecker wirken eingesteckt */
   .cable{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:4; }
@@ -87,7 +90,7 @@
   .pb__ports i:nth-child(3){ left:66%; width:10px; }
 </style>
 </head>
-<body>
+<body class="boot">
   <canvas id="fx"></canvas>
 
   <svg class="cable" id="cable" aria-hidden="true">
@@ -115,7 +118,7 @@
        umgedreht, Metallhülse steckt in der USB-C-Buchse (oberhalb der Buchsenmitte weggeschnitten), Gehäuse bündig darunter -->
   <svg class="cable cable--top" aria-hidden="true">
     <defs><clipPath id="portClip"><rect x="-20" y="138.4" width="124" height="120"/></clipPath></defs>
-    <g class="plug" id="plugTop" clip-path="url(#portClip)"><use href="#usbc" transform="translate(22.3 165.8) rotate(180) scale(.9)"/></g>
+    <g class="plug" id="plugTop" clip-path="url(#portClip)"><use href="#usbc" transform="translate(20.8 165.8) rotate(180) scale(.9)"/></g>
   </svg>
 
   <div class="enter" id="enter">
@@ -156,10 +159,10 @@
     enter.style.fontSize = (PHONE ? 13 : cl(W*0.0105, 14, 17)).toFixed(1)+'px';
     enter.style.width=ew+'px'; enter.style.left=((W-ew)/2)+'px';
     enter.style.top=(H*0.74 - (enter.offsetHeight||60)/2)+'px';
-    // Kabel: beginnt am Hals des oberen Steckers (Grundmaße: x 22.3, y 165.8) und läuft als weiche S-Kurve senkrecht hinunter;
+    // Kabel: beginnt am Hals des oberen Steckers (Grundmaße: x 20.8 = Mitte der sichtbaren USB-C-Öffnung, y 165.8) und läuft als weiche S-Kurve senkrecht hinunter;
     // unten endet es am Hals des unteren Steckers, dessen Metallhülse 2u über der Button-Oberkante sichtbar ist (Rest steckt drin)
     plugTop.setAttribute('transform',`translate(${px.toFixed(1)} ${py.toFixed(1)}) scale(${PBS.toFixed(3)})`);
-    P0=[px+22.3*PBS, py+165.8*PBS];
+    P0=[px+20.8*PBS, py+165.8*PBS];
     const top=parseFloat(enter.style.top), Qc=[W/2, top+(7.6-2)*SU-PL*SU], drop=Qc[1]-P0[1];
     const d=`M${P0[0].toFixed(1)} ${P0[1].toFixed(1)} C${P0[0].toFixed(1)} ${(P0[1]+drop*0.5).toFixed(1)} ${Qc[0].toFixed(1)} ${(Qc[1]-drop*0.5).toFixed(1)} ${Qc[0].toFixed(1)} ${Qc[1].toFixed(1)}`;
     const CW=CABU*SU;                                                  // Kabeldicke in px
@@ -287,7 +290,7 @@
   });
 
   // ---------- Ablauf ----------
-  const t0=performance.now(); let plugged=false;
+  let t0=0, plugged=false;
   function frame(now){
     if(gone) return;                                  // Startseite ist offen -> Ladeseite ruht
     // Fortschritt = langsamerer von Ladeanimation (Zeit) und echtem Laden der Startseite (window.__load, s. u.)
@@ -304,7 +307,17 @@
     if(!(plugged && parts.length===0 && rockets.length===0 && now>fwEnd)) requestAnimationFrame(frame);
   }
   layout(); drawCable(0);
-  requestAnimationFrame(frame);
+  // Start erst, wenn die Schrift geladen ist (spätestens nach 0.8 s): dann neu auslegen (Knopfhöhe hängt an der Schrift),
+  // einblenden und die Ladezeit ab jetzt zählen -> das Kabel beginnt bei 0, statt nach den ersten (oft stockenden) Bildern zu springen
+  let started=false;
+  function start(){
+    if(started || gone) return; started=true;
+    layout(); drawCable(0);
+    // zwei Bilder warten: der unsichtbare Zustand ist sicher gemalt -> das Einblenden läuft immer weich (auch bei Schrift aus dem Cache)
+    requestAnimationFrame(()=>requestAnimationFrame((now)=>{ t0=now; document.body.classList.remove('boot'); frame(now); }));
+  }
+  if(document.fonts && document.fonts.load) document.fonts.load('800 16px "Nihanzo Grotesk"').then(start, start); else start();
+  setTimeout(start, 800);
   addEventListener('resize',()=>{ if(gone) return; layout(); drawCable(shownK); });
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if(gone) return; layout(); drawCable(shownK); });
 })();
