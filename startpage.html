@@ -148,6 +148,7 @@
   .holeVideo{
     position:absolute; top:0; bottom:0; z-index:20; overflow:hidden;
     left:calc(var(--flowIn) - 9.5vh); right:calc(0.279 * var(--bldW));
+    pointer-events:none;   /* lag unsichtbar über den Karussell-Videos und fing Hover/Klick ab; .videoPlayer.show schaltet selbst wieder ein */
   }
   .videoPlayer{
     position:absolute; inset:0; opacity:0; pointer-events:none;
@@ -242,18 +243,50 @@
   @keyframes eqb{ from{ transform:scaleY(.16); } to{ transform:scaleY(1); } }
   .eq.muted .bar{ animation:none; transform:scaleY(.16); opacity:.45; }
   /* Karussell: vorderstes Video anklickbar (Hover „open" weiß) -> Player; außerhalb Hover „close" schwarz */
-  .vcard.front{ pointer-events:auto; cursor:none; }
+  /* jede sichtbare Karte fängt die Maus ab (sonst ging ein Klick durch eine nicht anklickbare vordere Karte an die dahinter);
+     öffnen lassen sich alle Karten, die ganz aus dem Glas sind (.front) */
+  /* „open"/„close" am Cursor = wie die Beschriftung am Fortschrittsbalken (weißes Kästchen, 12 px, Rosenfarbe) */
   .hoverLbl{ position:fixed; left:0; top:0; z-index:9998; pointer-events:none; opacity:0; transition:opacity .18s ease;
-    font-family:var(--font); font-size:14px; letter-spacing:.03em; text-transform:lowercase; }
-  .hoverLbl.open{ color:var(--accent); text-shadow:0 1px 6px rgba(0,0,0,.45); }
-  .hoverLbl.close{ color:var(--accent); text-shadow:0 1px 3px rgba(255,255,255,.6); }
+    font-family:var(--font); font-size:12px; letter-spacing:.03em; text-transform:lowercase; color:var(--accent);
+    background:#fff; border-radius:5px; padding:3px 7px; }
   .vpCatch{ position:fixed; inset:0; z-index:19; display:none; cursor:none;
     background:rgba(236,230,234,0); transition:background .45s ease; }
   .vpCatch.on{ display:block; background:rgba(236,230,234,.55); }
-  .vplayer{ position:fixed; left:0; top:0; z-index:19; display:none; overflow:hidden; aspect-ratio:4/3;
-    background:#16151a; transform-origin:0 0; cursor:none;
-    transition:transform .6s cubic-bezier(.2,.8,.2,1); box-shadow:0 30px 80px rgba(0,0,0,.35); }
-  .vplayer video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  /* Video-Player (nach arnaudrocca.fr/projects/panamaera, 15 % kleiner): ~61 % der Fensterbreite, 16:9, mittig, schmaler
+     blaugrauer Rand (#61708F); Bedienelemente weiß: unten Play/Pause · Fortschrittslinie (Rot der Seite) · Ton; pausiert:
+     Kreis mit Play-Dreieck; oben rechts X.
+     Maße der Bedienelemente in em – font-size setzt das Skript proportional zur Breite (16 px bei 1031 px wie die Vorlage) */
+  .vplayer{ position:fixed; left:0; top:0; z-index:19; display:none; overflow:hidden; box-sizing:border-box;
+    background:transparent; transform-origin:0 0; cursor:none;
+    transition:transform .6s cubic-bezier(.2,.8,.2,1); }   /* nichts ums Bild: kein Rahmen, kein Schatten, keine Kante */
+  .vplayer *{ cursor:none; }
+  .vplayer .vpMedia{ position:absolute; inset:var(--vpB,0px); overflow:hidden; background:transparent; }
+  /* cover statt contain: alle Videos sind 16:9 -> füllt exakt, kein schwarzer Haarstrich durch Rundung an den Kanten */
+  .vplayer video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:transparent; }
+  .vplayer.has-video .vph{ display:none; }
+  .vplayer button{ appearance:none; -webkit-appearance:none; border:0; background:none; padding:0; margin:0; color:#fff; }
+  .vplayer svg{ display:block; width:100%; height:100%; fill:currentColor; }
+  .vplayer .vpBig{ position:absolute; inset:0; display:grid; place-items:center; background:rgba(26,18,15,.35);
+    opacity:0; pointer-events:none; transition:opacity .3s ease; }
+  .vplayer.paused .vpBig{ opacity:1; pointer-events:auto; }
+  .vplayer .vpBig span{ width:9.7em; height:9.7em; border:2px solid currentColor; border-radius:50%; display:grid; place-items:center; }
+  .vplayer .vpBig svg{ width:4.25em; height:4.25em; transform:translateX(.35em); }
+  .vplayer .vpCtrl{ position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:1.5em; padding:2em 4em;
+    transition:opacity .35s ease; }
+  .vplayer .vpCtrl button{ width:1.375em; height:1.375em; flex:none; }
+  .vplayer .vpBar{ position:relative; flex:1; height:1em; }
+  .vplayer .vpTrack, .vplayer .vpProg{ position:absolute; left:0; top:50%; height:2px; pointer-events:none;
+    transform:translateY(-50%) scaleY(1); transition:transform .22s cubic-bezier(.2,.8,.2,1); }
+  .vplayer .vpBar:hover .vpTrack, .vplayer .vpBar:hover .vpProg, .vplayer .vpBar.drag .vpTrack, .vplayer .vpBar.drag .vpProg{
+    transform:translateY(-50%) scaleY(2.5); }   /* Linie wird beim Drüberfahren/Ziehen dicker */
+  .vplayer .vpTrack{ right:0; background:rgba(255,255,255,.45); }
+  .vplayer .vpProg{ width:0; background:var(--accent); }
+  .vplayer .vpX{ position:absolute; top:1.5em; right:1.5em; width:1.5em; height:1.5em; transition:opacity .35s ease; }
+  .vplayer svg .ic-pause, .vplayer.paused svg .ic-play{ display:inline; }
+  .vplayer svg .ic-play, .vplayer.paused svg .ic-pause{ display:none; }
+  .vplayer svg .ic-on, .vplayer.muted svg .ic-off{ display:inline; }
+  .vplayer svg .ic-off, .vplayer.muted svg .ic-on{ display:none; }
+  .vplayer.idle .vpCtrl, .vplayer.idle .vpX{ opacity:0; }   /* Maus ruht beim Abspielen -> Bedienelemente blenden aus */
   .vplayer .vph{ position:absolute; inset:0; display:grid; place-items:center;
     background:radial-gradient(120% 120% at 40% 30%,#34323a,#111014);
     color:var(--accent); font-family:var(--font); font-size:16px; letter-spacing:.03em; text-transform:lowercase; }
@@ -296,13 +329,14 @@
     will-change:transform,filter; background:#d9d2d6;     /* KEIN backface-visibility:hidden -> steile Karten flackern nicht */
     }
   .pcard img{ width:100%; height:100%; object-fit:cover; display:block; }
-  /* Video-Karussell ums Glas (gionatannese-Stil): 6 Platzhalter 4:3, versetzt, drehen mit dem Scroll.
+  /* Video-Karussell ums Glas (gionatannese-Stil): 4 Videos 16:9, versetzt, drehen mit dem Scroll.
      Vordere Karten z19 (vor dem Glas), hintere z17 (hinter dem Glas, milchig). Alle unter dem Ring (z20). */
-  .vcard{ position:fixed; left:0; top:0; aspect-ratio:4/3; z-index:17; pointer-events:none;
+  .vcard{ position:fixed; left:0; top:0; aspect-ratio:16/9; z-index:17; pointer-events:auto; cursor:none;
     opacity:0; visibility:hidden; overflow:hidden; background:#16151a; will-change:transform,opacity,filter; }
   .vcard .vph{ position:absolute; inset:0; display:grid; place-items:center;
     background:radial-gradient(120% 120% at 40% 30%,#34323a,#111014);
     color:var(--accent); font-family:var(--font); font-size:12px; letter-spacing:.03em; text-transform:lowercase; }
+  .vcard video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
   .vcard::after{ content:''; position:absolute; inset:0; background:#f3eff2; opacity:var(--milk,0); }  /* milchiger Schleier hinten */
   .glass3d canvas, .heart3d canvas{ width:100%; height:100%; display:block; }
 
@@ -521,13 +555,12 @@
     <div class="heart3d" id="heart3d"></div>
     <div class="glassPhoto" id="glassPhoto"><canvas id="glassPhotoCv" width="409" height="907"></canvas></div>
 
-    <!-- Video-Karussell ums Glas (Platzhalter 4:3) -->
-    <div class="vcard"><div class="vph">video 01</div></div>
-    <div class="vcard"><div class="vph">video 02</div></div>
-    <div class="vcard"><div class="vph">video 03</div></div>
-    <div class="vcard"><div class="vph">video 04</div></div>
-    <div class="vcard"><div class="vph">video 05</div></div>
-    <div class="vcard"><div class="vph">video 06</div></div>
+    <!-- Video-Karussell ums Glas (16:9): Karte = Standbild (erstes nicht schwarzes Bild) + stumme 5-s-Schleife (erste 5 s,
+         lädt erst ab dem Glas, nur die vorderste läuft); Klick -> Player streamt das volle Video von Cloudflare R2 (data-full) -->
+    <div class="vcard" data-title="schnitt final" data-full="https://pub-e7c47bfd57b3409ab157533facc713fb.r2.dev/schnitt-final-1080p.mp4"><video muted loop playsinline preload="none" poster="assets/img/car-schnitt.webp" data-src="assets/video/car-schnitt.mp4"></video></div>
+    <div class="vcard" data-title="life" data-full="https://pub-e7c47bfd57b3409ab157533facc713fb.r2.dev/life-ferrari-4-1080p.mp4"><video muted loop playsinline preload="none" poster="assets/img/car-life.webp" data-src="assets/video/car-life.mp4"></video></div>
+    <div class="vcard" data-title="was up" data-full="https://pub-e7c47bfd57b3409ab157533facc713fb.r2.dev/was%20up%20komplett.mp4"><video muted loop playsinline preload="none" poster="assets/img/car-wasup.webp" data-src="assets/video/car-wasup.mp4"></video></div>
+    <div class="vcard" data-title="grau" data-full="https://pub-e7c47bfd57b3409ab157533facc713fb.r2.dev/grau3-1080p.mp4"><video muted loop playsinline preload="none" poster="assets/img/car-grau.webp" data-src="assets/video/car-grau.mp4"></video></div>
     <!-- Foto-Galerie (Fächer) -->
     <div class="photoGal" id="photoGal">
       <div class="pcard"><img data-src="assets/img/gallery/01.webp" alt="" decoding="async" /></div>
@@ -544,7 +577,24 @@
 
     <!-- Video-Player (öffnet vom vordersten Karussell-Video; Klick daneben schließt) -->
     <div class="vpCatch" id="vpCatch"></div>
-    <div class="vplayer" id="vplayer"><video playsinline loop></video><div class="vph" id="vpLabel">video</div></div>
+    <div class="vplayer" id="vplayer">
+      <div class="vpMedia">
+        <video playsinline preload="none" disablepictureinpicture></video>
+        <div class="vph" id="vpLabel">video</div>
+        <button class="vpBig" id="vpBig" type="button" aria-label="play"><span><svg viewBox="0 0 300 300"><polygon points="0,0 0,300 300,150"/></svg></span></button>
+        <div class="vpCtrl">
+          <button id="vpPlay" type="button" aria-label="play / pause"><svg viewBox="0 0 22 22">
+            <g class="ic-pause"><rect x="4" y="3" width="4.5" height="16"/><rect x="13.5" y="3" width="4.5" height="16"/></g>
+            <polygon class="ic-play" points="5,3 19,11 5,19"/></svg></button>
+          <div class="vpBar" id="vpBar"><span class="vpTrack"></span><span class="vpProg" id="vpProg"></span></div>
+          <button id="vpMute" type="button" aria-label="sound"><svg viewBox="0 0 22 22">
+            <polygon points="2,8 6,8 11,4 11,18 6,14 2,14"/>
+            <g class="ic-on" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 8.2q2.2 2.8 0 5.6"/><path d="M16.6 5.6q4.6 5.4 0 10.8"/></g>
+            <g class="ic-off" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14.5 8l5 6M19.5 8l-5 6"/></g></svg></button>
+        </div>
+        <button class="vpX" id="vpX" type="button" aria-label="close"><svg viewBox="0 0 22 22"><path d="M3 3L19 19M19 3L3 19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
 
     <!-- Gleitende, leicht weiß schimmernde Kästen (rechts -> links) -->
     <div class="slidebox" id="box1">
@@ -896,7 +946,7 @@
   // Einschenken: fizzy-pour.m4a <- u_xg7ssi08yr-fizzy-drink-pour-362043.mp3 (0.95–12.5 s, Stille vorne weg).
   // Läuft, solange sich das Glas bis zum Schaum füllt; Einstieg an der Stelle, die zum Füllstand passt; aus = lange weiche Blende
   let pour=null;
-  function pourSound(on, fill){
+  function pourSound(on, fill, fast){
     if(on && !pour){
       if(!sfxReady()) return;
       const token=pour={pending:true};
@@ -912,8 +962,9 @@
     } else if(!on && pour){
       const p=pour; pour=null; if(p.pending) return;
       const t=audioCtx.currentTime; p.g.gain.cancelScheduledValues(t); p.g.gain.setValueAtTime(p.g.gain.value,t);
-      // lange, weiche Ausblende: wird langsam leiser (Zeitkonstante 1.2 s -> nach ~5 s verklungen)
-      p.g.gain.setTargetAtTime(0.0001,t,1.2); try{ p.src.stop(t+6); }catch(_){}
+      // lange, weiche Ausblende: wird langsam leiser (Zeitkonstante 1.2 s -> nach ~5 s verklungen);
+      // fast (Video öffnet sich): sofort aus (60 ms gegen Knacken)
+      p.g.gain.setTargetAtTime(0.0001,t,fast ? 0.06 : 1.2); try{ p.src.stop(t+(fast ? 0.4 : 6)); }catch(_){}
     }
   }
   // Bleistift-Schleife: läuft nur, solange an; Stopp „direkt" (15 ms Blende gegen Knacken)
@@ -966,7 +1017,7 @@
     muted = m;
     if(master) master.gain.value = muted ? 0 : 0.9;
     if(audioCtx){ try{ muted ? audioCtx.suspend() : audioCtx.resume(); }catch(_){} }
-    document.querySelectorAll('video').forEach(v=>{ v.muted = muted; });
+    document.querySelectorAll('video').forEach(v=>{ if(!v.closest('.vcard')) v.muted = muted; });   // Karussell-Schleifen bleiben stumm (sonst kein Autoplay)
     eq.classList.toggle('muted', muted);
     eq.setAttribute('aria-pressed', String(muted));
   }
@@ -1128,11 +1179,14 @@
     const photoGal=document.getElementById('photoGal'), pcards=[...photoGal.querySelectorAll('.pcard')];
     const PAR=[1.5,1.332,1.5,1.5,1.5,1.5,1.783,1.777,1.48,1.48];   // Seitenverhältnisse der Fotos
     let photosLoaded=false;
-    const cards=[...document.querySelectorAll('.vcard')];
+    const cards=[...document.querySelectorAll('.vcard')], cardVids=cards.map(c=>c.querySelector('video'));
+    let cardVidsLoaded=false, cardPlaying=-1, cardTry=0, cardDenied=false;
     const cardParent=cards[0].parentNode, cardAnchor=cards[cards.length-1].nextSibling; let cardOrderKey='';
     // versetzte, „willkürliche" Anordnung: Winkel°, Höhe (Anteil Loch-Halbhöhe), Größe, Radius
-    const CARD=[{a:8,y:-0.42,w:1.00,r:1.00},{a:66,y:0.30,w:0.78,r:0.90},{a:121,y:-0.08,w:1.18,r:1.06},
-                {a:183,y:0.44,w:0.88,r:0.96},{a:236,y:-0.30,w:0.82,r:1.10},{a:302,y:0.12,w:1.06,r:0.88}];
+    // 4 Videos (HTML-Reihenfolge schnitt final, life, was up, grau): das Karussell dreht vorn nach links, darum kommt nach
+    // a 2 (vorn, fast mittig) als nächstes a 278 nach vorn, dann 188, dann 98 -> Reihenfolge vorn = schnitt final, life, was up, grau
+    // alle Karten mit gleicher Grundgröße (w 1) – kleiner wirken hintere nur durch die Tiefe
+    const CARD=[{a:2,y:-0.14,w:1,r:1.00},{a:278,y:0.30,w:1,r:0.94},{a:188,y:-0.12,w:1,r:1.06},{a:98,y:0.40,w:1,r:0.92}];
     // Austritts-Rang je Video: sortiert nach Tiefe z=cos(a)·r (hinten = negativ zuerst)
     const EM_RANK=(()=>{ const ord=CARD.map((k,i)=>[i,Math.cos(k.a*Math.PI/180)*k.r]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
       const rk=[]; ord.forEach((i,r)=>rk[i]=r); return rk; })();
@@ -1489,18 +1543,18 @@
       const car = cl((g-CAR_START)/CAR_SPAN,0,1);
       window.__glass.car = car;
       // Einschenk-Geräusch, solange das Glas sich bis zum Schaum füllt (gleiche Füllkurve wie js/glass.js: car 0.06..0.68)
-      const fillNow = cl((car-0.06)/0.62,0,1), pourOn = glassOn && fillNow>0.005 && fillNow<0.995;
-      if(pourOn!==pourPrev){ pourPrev=pourOn; if(window.pourSound) pourSound(pourOn, fillNow); }
+      const fillNow = cl((car-0.06)/0.62,0,1), pourOn = glassOn && fillNow>0.005 && fillNow<0.995 && !window.__vpOpen;   // offenes Video: Glas still
+      if(pourOn!==pourPrev){ pourPrev=pourOn; if(window.pourSound) pourSound(pourOn, fillNow, !!window.__vpOpen); }
       const EM_DUR = 0.28*GLASS_SPAN;                                // Gleitdauer je Video (in g)
       // Reihenfolge nach Tiefe im Karussell (Drehung 0): die HINTEREN Videos kommen zuerst aus dem Glas, die vorderen zuletzt
       const emStart = (i)=>GLASS_START + GLASS_SPAN*(0.5 + EM_RANK[i]*0.1);   // Rang 0 bei t=0.5 … Rang 5 bei t=1.0
-      const outZ=[];                                             // voll ausgetretene Karten mit Tiefe
+      const outZ=[], openZ=[];                                   // ganz ausgetreten / schon öffnungsbereit                                             // voll ausgetretene Karten mit Tiefe
       if(pc<CUT || g<GLASS_START+0.5*GLASS_SPAN){   // vor dem ersten Austritt (Rang 0)
         for(const c of cards){ c.style.opacity='0'; c.style.visibility='hidden'; } }
       else{
         const rr=ringWrap.getBoundingClientRect(), hx=0.3825*rr.width, hy=0.425*rr.height;
         const R=hx*0.5, P=1100, CYc=innerHeight/2, YS=0.72;           // enger ums Glas (weniger Anschnitt an den Kissen)
-        const baseW=Math.min(hx*0.34, 240), rot=car*Math.PI*2;
+        const baseW=Math.min(hx*0.468, 331), rot=car*Math.PI*2;   // 16:9, +15 % und nochmal +10 %
         // Austrittspunkt = Kelchmitte des Glases (aktuelle Anflug-Größe wie im three-Modul)
         const gt2=cl((g-GLASS_START)/GLASS_SPAN,0,1), eG=1-Math.pow(1-gt2,3), scG=Math.pow(0.03,1-eG);
         // Austrittspunkt = ÖFFNUNG des Glases: Rand liegt 0.5·Glashöhe über der Mitte (Radius 0.236·H),
@@ -1519,10 +1573,10 @@
           const fx=CX + x*sFin, fy=CYc + push + k.y*hy*YS*sFin;        // Ziel-Mitte im Karussell (+ Verdrängung)
           const phi=k.a*Math.PI/180;                                   // jede Karte von einer anderen Stelle des Rands
           const ox=CX - Math.sin(phi)*rimR, oy=rimY + Math.cos(phi)*rimR*0.35*Math.abs(Math.sin(th0)+0.4);
-          const cx=ox+(fx-ox)*e, cy=oy+(fy-oy)*e, s=sFin*(0.08+0.92*e);
+          const cx=ox+(fx-ox)*e, cy=oy+(fy-oy)*e, s=sFin*(0.08+0.92*e);   // Tiefe wirkt wieder auf die Größe (wie vorher)
           c.style.width=w.toFixed(1)+'px';
           c.style.transformOrigin='0 0';
-          c.style.transform=`translate(${(cx-w*s/2).toFixed(1)}px,${(cy-w*0.75*s/2).toFixed(1)}px) scale(${s.toFixed(3)})`;
+          c.style.transform=`translate(${(cx-w*s/2).toFixed(1)}px,${(cy-w*0.5625*s/2).toFixed(1)}px) scale(${s.toFixed(3)})`;
           c.style.zIndex = z>0 ? '19' : '17';                          // vorn vor dem Glas, hinten dahinter
           cardZ[i]=z;
           const back=cl(-z/(R*1.1),0,1)*e;
@@ -1530,16 +1584,27 @@
           c.style.filter = back>0.02 ? `blur(${(back*2.2).toFixed(1)}px)` : 'none';
           c.style.opacity=String(cl(u*5,0,1));
           if(u>=1) outZ.push([i,z]);
+          if(u>=0.15) openZ.push([i,z]);                               // öffnen geht, sobald die Karte sichtbar ist
         });
         // innerhalb derselben Ebene (z-index 19 vorn / 17 hinten) entscheidet die HTML-Reihenfolge: Karten nach Tiefe sortieren,
         // damit nähere Videos immer vor weiter entfernten liegen (nur umhängen, wenn sich die Reihenfolge ändert)
         const order=cards.map((_,i)=>i).sort((a,b)=>cardZ[a]-cardZ[b]), key=order.join();
         if(key!==cardOrderKey){ cardOrderKey=key; for(const i of order) cardParent.insertBefore(cards[i], cardAnchor); }
       }
-      // nur das vorderste Video ist anklickbar (und nur solange der Player zu ist)
-      // die DREI vordersten Videos sind anklickbar (nur solange der Player zu ist)
-      const front = (window.__vpOpen || push>4) ? [] : outZ.sort((a,b)=>b[1]-a[1]).slice(0,3).map(a=>a[0]);
+      // alle sichtbaren Videos lassen sich öffnen – auch während sie noch aus dem Glas gleiten (solange der Player zu ist und die
+      // Fotos sie nicht verdrängen)
+      const front = (window.__vpOpen || push>4) ? [] : openZ.sort((a,b)=>b[1]-a[1]).map(a=>a[0]);
       window.__frontCard = front.length ? front[0] : -1;
+      // Vorschau-Schleifen: erst laden, wenn die Karten aus dem Glas kommen; nur die vorderste läuft (bei offenem Player keine)
+      if(!cardVidsLoaded && g>GLASS_START+0.3*GLASS_SPAN){ cardVidsLoaded=true;
+        for(const v of cardVids){ v.src=v.dataset.src; v.preload='auto'; } }
+      const playI = (window.__vpOpen || !cardVidsLoaded || outZ.length<cards.length || push>4) ? -1 : outZ.reduce((m,x)=>x[1]>m[1]?x:m)[0];
+      if(playI!==cardPlaying){ cardPlaying=playI; cardVids.forEach((v,i)=>{ if(i!==playI) v.pause(); }); cardTry=0; cardDenied=false; }
+      // nachfassen, falls ein Start noch nicht klappte (Karte gerade erst aus dem Glas); verweigert der Browser das Abspielen
+      // grundsätzlich (Safari im Stromsparmodus), bleibt das Standbild stehen und es wird erst bei der nächsten Karte neu versucht
+      const nowT=performance.now();
+      if(playI>=0 && !cardDenied && cardVids[playI].paused && nowT-cardTry>600){ cardTry=nowT;
+        cardVids[playI].play().catch((e)=>{ if(e && e.name==='NotAllowedError') cardDenied=true; }); }
       cards.forEach((c,i)=>c.classList.toggle('front', front.includes(i)));
     }
 
@@ -1652,24 +1717,58 @@
 <!-- Glas-3D: js/glass.js, nachgeladen vom scrollDirector (loadGlass), sobald die Galerie beginnt -->
 <script>
   /* ============ Karussell-Video öffnen / schließen ============
-     Hover über dem vordersten Video -> „open" (weiß); Klick -> Player wächst aus der Karte bis fast an die Kissen.
+     Hover über den vorderen Videos -> „open"; Klick -> Player wächst aus der Karte auf ~61 % der Fensterbreite, mittig (Ton an, außer Seite stumm).
      Solange offen: Scroll gesperrt, außerhalb Hover „close" (schwarz); Klick daneben -> zurück in die Karte, Scroll läuft weiter. */
   (function(){
     const cards=[...document.querySelectorAll('.vcard')];
     const lbl=document.getElementById('hoverLbl'), vp=document.getElementById('vplayer'),
           vpc=document.getElementById('vpCatch'), vpLabel=document.getElementById('vpLabel'), ring=document.getElementById('ringWrap');
     let openCard=null, busy=false;
-    const setLbl=(txt,cls)=>{ lbl.textContent=txt; lbl.className='hoverLbl '+cls; lbl.style.opacity=txt?'1':'0'; };
-    addEventListener('pointermove',e=>{ lbl.style.transform=`translate(${e.clientX+18}px,${e.clientY-10}px)`; });
+    let lblState='';
+    const setLbl=(txt,cls)=>{ const st=txt+'|'+cls; if(st===lblState) return; lblState=st;   // nur bei Änderung anfassen
+      if(txt) lbl.textContent=txt; lbl.className='hoverLbl '+cls; lbl.style.opacity=txt?'1':'0'; };
+    // „open" nur, solange WIRKLICH eine öffnungsbereite Karte unter der Maus liegt: Treffertest bei jeder Mausbewegung UND in jedem
+    // Bild (Karten wandern beim Scrollen unter der stehenden Maus weg – dafür feuert kein pointerleave, das Label blieb sonst hängen)
+    let mX=-1, mY=-1;
+    const hoverCard=(el)=>{ const c=el && el.closest ? el.closest('.vcard') : null; return c && c.classList.contains('front') ? c : null; };
+    const updLbl=(el)=>{ if(!openCard) setLbl(hoverCard(el) ? 'open' : '', 'open'); };
+    addEventListener('pointermove',e=>{ mX=e.clientX; mY=e.clientY; lbl.style.transform=`translate(${mX+18}px,${mY-10}px)`; updLbl(e.target); });
+    document.documentElement.addEventListener('pointerleave',()=>{ mX=-1; if(!openCard) setLbl('',''); });
+    (function hoverTick(){ if(!openCard && mX>=0) updLbl(document.elementFromPoint(mX, mY)); requestAnimationFrame(hoverTick); })();
     function cardRect(c){ return c.getBoundingClientRect(); }
+    // Größe: Vorlage (Bild 71.6 % der Fensterbreite = 1031 von 1440 px) 15 % kleiner, 16:9, höchstens 70 % der Fensterhöhe; dazu der Rand;
+    // mittig im Fenster
     function targetRect(){
-      // 4:3-Rechteck in der Loch-Ellipse, Ecken knapp vor den Kissen
-      const r=ring.getBoundingClientRect(), rx=0.3825*r.width, ry=0.425*r.height;
-      const hw=0.95/Math.sqrt(1/(rx*rx)+0.5625/(ry*ry)), w=2*hw, h=w*0.75;
-      return {left:innerWidth/2-w/2, top:innerHeight/2-h/2, width:w, height:h};
+      const B=0 /* Rahmen vorerst weg; vorher Math.min(15, Math.max(6, 0.0104*innerWidth)) */, wi=0.85*Math.min(0.716*innerWidth, 0.82*innerHeight*16/9);
+      const w=Math.round(wi+2*B), h=Math.round(wi*9/16+2*B);                 // ganze Pixel: keine halben Kanten
+      return {left:Math.round(innerWidth/2-w/2), top:Math.round(innerHeight/2-h/2), width:w, height:h, B, wi};
     }
-    function place(r, T){ vp.style.width=T.width+'px';
+    function place(r, T){ vp.style.width=T.width+'px'; vp.style.height=T.height+'px';
+      vp.style.setProperty('--vpB', T.B+'px'); vp.style.fontSize=(16*T.wi/1031).toFixed(2)+'px';
       const s=r.width/T.width; vp.style.transform=`translate(${r.left}px,${r.top}px) scale(${s})`; }
+    // --- Bedienung: Play/Pause, Fortschritt (klicken/ziehen = springen), Ton, X; Bedienelemente blenden aus, wenn die Maus ruht ---
+    const vv=vp.querySelector('video'), prog=document.getElementById('vpProg'), bar=document.getElementById('vpBar');
+    const toggle=()=>{ if(vv.paused) vv.play().catch(()=>{}); else vv.pause(); };
+    const syncState=()=>{ vp.classList.toggle('paused', vv.paused); vp.classList.toggle('muted', vv.muted); };
+    ['play','pause','playing','volumechange','emptied'].forEach(ev=>vv.addEventListener(ev, syncState));
+    document.getElementById('vpPlay').addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
+    document.getElementById('vpBig').addEventListener('click',e=>{ e.stopPropagation(); vv.play().catch(()=>{}); });
+    vv.addEventListener('click',toggle);
+    document.getElementById('vpMute').addEventListener('click',e=>{ e.stopPropagation(); vv.muted=!vv.muted; });
+    document.getElementById('vpX').addEventListener('click',e=>{ e.stopPropagation(); closePlayer(false); });
+    let seeking=false;
+    const seek=(e)=>{ const r=bar.getBoundingClientRect(), d=vv.duration;
+      if(d>0) vv.currentTime=Math.max(0, Math.min(1, (e.clientX-r.left)/r.width))*d; };
+    bar.addEventListener('pointerdown',e=>{ e.stopPropagation(); seeking=true; bar.classList.add('drag'); bar.setPointerCapture(e.pointerId); seek(e); });
+    bar.addEventListener('pointermove',e=>{ if(seeking) seek(e); });
+    bar.addEventListener('pointerup',()=>{ seeking=false; bar.classList.remove('drag'); });
+    bar.addEventListener('pointercancel',()=>{ seeking=false; bar.classList.remove('drag'); });
+    (function tick(){ if(window.__vpOpen){ const d=vv.duration; prog.style.width=(d>0 ? 100*vv.currentTime/d : 0).toFixed(3)+'%'; }
+      requestAnimationFrame(tick); })();
+    let idleT=0;
+    const wake=()=>{ vp.classList.remove('idle'); clearTimeout(idleT);
+      idleT=setTimeout(()=>{ if(!vv.paused && !seeking) vp.classList.add('idle'); }, 2200); };
+    vp.addEventListener('pointermove',wake); vv.addEventListener('pause',wake); vv.addEventListener('play',wake);
     // Scroll-Sperre: Position merken und halten (overflow:hidden würde die Seite auf 0 zurücksetzen)
     let lockY=0;
     function lock(on){ if(on) lockY=scrollY; }
@@ -1679,26 +1778,28 @@
     addEventListener('wheel',stop,{passive:false}); addEventListener('touchmove',stop,{passive:false});
     addEventListener('keydown',e=>{ if(window.__vpOpen && [' ','ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.key)) e.preventDefault(); });
     cards.forEach((c,i)=>{
-      c.addEventListener('pointerenter',()=>{ if(c.classList.contains('front') && !openCard) setLbl('open','open'); });
-      c.addEventListener('pointerleave',()=>{ if(!openCard) setLbl('',''); });
-      c.addEventListener('pointermove',()=>{ if(!openCard) setLbl(c.classList.contains('front')?'open':'', 'open'); });
       c.addEventListener('click',()=>{
         if(!c.classList.contains('front') || openCard || busy) return;
         openCard=c; busy=true; window.__vpOpen=true; lock(true);
-        vpLabel.textContent=c.querySelector('.vph').textContent;
+        vpLabel.textContent=c.dataset.title||'video';
+        const v=vv, full=c.dataset.full;
+        if(full && v.getAttribute('src')!==full){ v.poster=c.querySelector('video').poster; v.src=full; v.preload='auto'; prog.style.width='0%'; }
+        vp.classList.toggle('has-video', !!full);
         const T=targetRect();
         vp.style.transition='none'; vp.style.display='block'; place(cardRect(c),T);
         c.style.visibility='hidden';
         vp.offsetWidth;                                   // reflow -> Transition greift
         vp.style.transition=''; place(T,T);
         vpc.classList.add('on'); setLbl('close','close');
-        const v=vp.querySelector('video'); v.muted=!!(window.__isMuted&&window.__isMuted()); if(v.currentSrc){ v.play().catch(()=>{}); }
+        // mit Ton (Klick = Erlaubnis), außer die Seite ist stumm geschaltet
+        v.muted=!!(window.__isMuted&&window.__isMuted()); syncState(); wake();
+        if(full){ v.play().catch(()=>{ syncState(); }); }
         setTimeout(()=>busy=false,600);
       });
     });
     vp.addEventListener('pointerenter',()=>{ if(openCard) setLbl('',''); });
     vp.addEventListener('pointerleave',()=>{ if(openCard) setLbl('close','close'); });
-    vpc.addEventListener('pointermove',()=>{ if(openCard && lbl.textContent!=='close') setLbl('close','close'); });
+    vpc.addEventListener('pointermove',()=>{ if(openCard) setLbl('close','close'); });
     function closePlayer(instant){
       if(!openCard) { window.__vpOpen=false; busy=false; return; }
       if(busy && !instant) return;
@@ -1713,7 +1814,8 @@
     }
     window.__closePlayer=closePlayer;
     vpc.addEventListener('click',()=>closePlayer(false));
-    addEventListener('keydown',e=>{ if(e.key==='Escape' && window.__vpOpen) closePlayer(false); });
+    addEventListener('keydown',e=>{ if(!window.__vpOpen) return;
+      if(e.key==='Escape') closePlayer(false); else if(e.key===' '){ toggle(); wake(); } });
   })();
 </script>
 <script>

@@ -333,7 +333,7 @@
   (function preloadStartpage(){
     const L = window.__load = { p:0, done:false };
     const RX = /assets\/[\w\-./]+?\.(?:webp|png|jpe?g|gif|svg|mp4|m4a|mp3|glb|ttf|woff2)(?:\?v=\d+)?/g;
-    const SKIP = /assets\/raw\/|bg-(?:kugeln|glas-grau|glas-sepia|senf)\./;
+    const SKIP = /assets\/raw\/|assets\/video\/car-|bg-(?:kugeln|glas-grau|glas-sepia|senf)\./;   // Karussell-Schleifen laden erst ab dem Glas
     const MODS = ['js/vendor/three/three.module.js', 'js/glass.js', 'js/heart.js', 'js/vendor/three/GLTFLoader.js',
                   'js/vendor/utils/BufferGeometryUtils.js'];
     const files = [];
