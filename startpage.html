@@ -341,12 +341,12 @@
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.18)); }
   .sip img{ position:absolute; left:calc(var(--gh) * -0.2233); top:calc(var(--gh) * -0.02); height:var(--gh); width:auto;
     transform-origin:50% 2%; transform:rotate(64deg); }
-  /* Tropfen: kleine weiße, längliche Tropfen bilden sich langsam an der tiefsten Stelle des Glasrands (frame-bronze.webp
+  /* Tropfen: kleine blaugraue, längliche Tropfen bilden sich langsam an der tiefsten Stelle des Glasrands (frame-bronze.webp
      ~1895/126.5), lösen sich und fallen SENKRECHT (beschleunigend, im Fallen etwas gestreckt) bis auf Mundhöhe (~145), wo sie
      verschwinden. --u = Bildschirm-px je Bandbild-Pixel (3800 breit); Ursprung = .sip-Punkt (1893.9/93.7); 2 Tropfen, je 2.6 s, versetzt */
-  .sip .drop{ position:absolute; --dw:max(1.6px, calc(var(--u) * 4)); width:var(--dw); height:calc(var(--dw) * 2.2);
+  .sip .drop{ position:absolute; --dw:max(2.2px, calc(var(--u) * 5.4)); width:var(--dw); height:calc(var(--dw) * 2.2);
     left:calc(var(--u) * 1.1 - var(--dw) / 2); top:calc(var(--u) * 32.6); transform-origin:50% 0; opacity:0;
-    background:radial-gradient(ellipse at 42% 62%, #fff 0 40%, rgba(255,255,255,.88) 68%, rgba(232,236,240,.75));
+    background:radial-gradient(ellipse at 42% 62%, #9AA6C0 0 35%, #8794B1 65%, #7987A5);   /* Blaugrau des Vorhangs („re“, #61708F), etwas heller */
     border-radius:50% 50% 50% 50% / 62% 62% 38% 38%;   /* Tropfenform: oben spitzer, unten rund */
     animation:drip 2.6s linear infinite; }
   .sip .drop + .drop{ animation-delay:-1.3s; }
@@ -654,6 +654,26 @@
   <div class="scroll-space"></div>
 
 <script>
+  /* Wisch-Gesten am Rad/Trackpad erkennen (Vorhang + Halt am Würfel): eine Geste endet nach 200 ms Pause oder bei
+     Richtungswechsel; im Nachlauf (abklingende Werte) beginnt ein neues Wischen, sobald der Ausschlag nach dem Abklingen
+     wieder klar ansteigt (macOS bricht den Nachlauf beim neuen Wischen ab). fire = einmal je Geste nach 12 px in eine
+     Richtung (kein Auslösen durch ein versehentliches Zucken); fresh = dieses Ereignis beginnt eine neue Geste. */
+  function wheelGestures(){
+    let last = 0, dir = 0, acc = 0, fired = false, peak = 0, min = Infinity, tF = 0, id = 0;
+    return (d)=>{
+      const now = performance.now(), ad = Math.abs(d), sg = Math.sign(d);
+      const again = fired && now - tF > 300 && min < 0.6*peak && ad > Math.max(1.8*min, min + 4);
+      const fresh = now - last > 200 || again || (sg !== 0 && sg !== dir);
+      if(fresh){ id++; dir = sg; acc = 0; fired = false; peak = 0; min = Infinity; }
+      last = now;
+      if(ad > peak){ peak = ad; min = Infinity; } else min = Math.min(min, ad);
+      let fire = false;
+      if(!fired){ acc += ad; if(acc >= 12 && sg){ fired = fire = true; tF = now; } }
+      return { fresh, fire, id };
+    };
+  }
+</script>
+<script>
   /* ============ Vorhang-Intro (ehem. curtain.html) ============
      Scrollen bewegt zuerst NUR den Vorhang (Seite bleibt oben): das Weiß weicht von rechts bis an den Grünkohl, dann
      schieben sich von oben und unten Balken herein, bis sie sich in der Mitte treffen – der ganze Vorhang (Weiß, Grünkohl, Titel, SCROLL-Rahmen) ist dann weg; dahinter
@@ -681,19 +701,29 @@
       }
       sway.animate(kf, { duration:8000, iterations:Infinity });
     }
-    // Scroll-Weg für beide Phasen
-    const DIST = ()=>1.4*innerHeight;
-    let acc = 0, p = 0, done = false, ty = null;
-    const push = (d)=>{ acc = cl(acc+d, 0, DIST()); };
-    addEventListener('wheel', e=>{ if(done) return; e.preventDefault();
-      push(e.deltaY*(e.deltaMode===1 ? 16 : e.deltaMode===2 ? innerHeight : 1)*0.9); }, {passive:false});
+    // Stufen statt Scroll-Weg: JEDE Wischbewegung (Trackpad samt Nachlauf, Mausrad-Raster, Taste, Wisch auf dem Touchscreen)
+    // führt genau eine Stufe aus, egal wie kräftig sie ist: 1. Wischen -> das Weiß weicht von rechts bis an den Grünkohl,
+    // 2. Wischen -> Balken oben + unten schließen, Vorhang weg. Nach oben wischen = eine Stufe zurück.
+    const A_END = 0.38, STOPS = [0, A_END, 1];
+    let stage = 0, p = 0, done = false, ty = null, swallow = false;
+    const step = (dir)=>{ stage = cl(stage + dir, 0, STOPS.length - 1); };
+    const gest = wheelGestures();
+    addEventListener('wheel', e=>{
+      const d = e.deltaY*(e.deltaMode===1 ? 16 : e.deltaMode===2 ? innerHeight : 1);
+      if(done){                                      // Nachlauf des letzten Wischens noch schlucken, damit die Seite nicht gleich losscrollt
+        if(swallow && !gest(d).fresh) e.preventDefault(); else swallow = false;
+        return;
+      }
+      e.preventDefault();
+      if(gest(d).fire) step(Math.sign(d));
+    }, {passive:false});
     addEventListener('touchstart', e=>{ ty = e.touches[0].clientY; }, {passive:true});
     addEventListener('touchmove', e=>{ if(done || ty==null) return; e.preventDefault();
-      const y = e.touches[0].clientY; push((ty-y)*1.4); ty = y; }, {passive:false});
-    addEventListener('keydown', e=>{ if(done) return; const k = e.key, s = innerHeight*0.4;
-      if(k==='ArrowDown'){ e.preventDefault(); push(s*0.4); } else if(k==='PageDown' || k===' '){ e.preventDefault(); push(s); }
-      else if(k==='ArrowUp'){ e.preventDefault(); push(-s*0.4); } else if(k==='PageUp'){ e.preventDefault(); push(-s); }
-      else if(k==='End'){ e.preventDefault(); push(1e9); } else if(k==='Home'){ e.preventDefault(); push(-1e9); } });
+      const dy = ty - e.touches[0].clientY; if(Math.abs(dy) > 30){ step(Math.sign(dy)); ty = null; } }, {passive:false});
+    addEventListener('keydown', e=>{ if(done) return; const k = e.key;
+      if(k==='ArrowDown' || k==='PageDown' || k===' '){ e.preventDefault(); step(1); }
+      else if(k==='ArrowUp' || k==='PageUp'){ e.preventDefault(); step(-1); }
+      else if(k==='End'){ e.preventDefault(); stage = STOPS.length - 1; } else if(k==='Home'){ e.preventDefault(); stage = 0; } });
     addEventListener('scroll', ()=>{ if(!done && scrollY!==0) scrollTo(0,0); });   // z. B. Scrollbalken ziehen
 
     // Vorhang-Fläche = weißer CSS-Hintergrund von #curtainGl (früherer Senf-Shader: .claude/archiv/curtain-senf-shader.js)
@@ -751,15 +781,16 @@
       requestAnimationFrame(()=>el.classList.remove('prep')); };
     Promise.all(ready).then(show); setTimeout(show, 2500);
 
-    const wrap = hero.querySelector('.hero__wrap'), A_END = 0.38;   // 1) rechts -> Grünkohl  2) oben + unten -> ganz weg
+    const wrap = hero.querySelector('.hero__wrap');   // 1) rechts -> Grünkohl  2) oben + unten -> ganz weg (A_END s. o.)
     function finish(){
-      done = true; window.__curtainOn = false; el.remove(); document.documentElement.classList.remove('curtain-on');
+      done = true; swallow = true; window.__curtainOn = false; el.remove(); document.documentElement.classList.remove('curtain-on');
       if(typeof begin === 'function') begin();                         // Schreib-Animation (+ Ton) der Startseite
     }
+    let lastT = 0;
     function frame(now){
       if(done) return;
-      const target = acc/DIST();
-      p += (target-p)*0.075; if(Math.abs(target-p) < 1e-4) p = target;
+      const target = STOPS[stage], dt = Math.min(now - (lastT || now), 100); lastT = now;
+      p += (target-p)*(1 - Math.exp(-dt/210)); if(Math.abs(target-p) < 1e-4) p = target;   // zeitbasiert (120-Hz-Displays nicht schneller)
       const a = smooth(cl(p/A_END, 0, 1)), b = smooth(cl((p-A_END)/(1-A_END), 0, 1)), half = innerHeight/2;
       document.documentElement.classList.toggle('curtain-on', a <= 0.001);   // Fortschrittsbalken, sobald das Weiß weicht
       // 1) der ganze Vorhang weicht von rechts bis an die rechte Kante des Grünkohls (= Kohl-Kasten, ohne den weißen
@@ -1555,10 +1586,18 @@
       backAcc=Math.min(BACK_PX(), backAcc+d); backT=performance.now();
       loadGlass(); loadHeart();                      // Würfel-Szene vorladen, damit sie nach dem Sprung gleich da ist
     }
+    // Halt am Würfel: ein Wisch (samt Nachlauf), der VOR dem Würfel beginnt, endet am Würfel mit Kontakt – ein kräftiger
+    // Trackpad-Wisch schoss sonst in einem Rutsch durch Würfel + Weißblende bis an den Anfang. Erst das nächste Wischen geht weiter.
+    const endGest=wheelGestures(); let gestY0=0;
     addEventListener('wheel', e=>{
       const d=e.deltaY*(e.deltaMode===1 ? 16 : e.deltaMode===2 ? innerHeight : 1);
+      if(endGest(d).fresh) gestY0=scrollY;
       if(d<0) pushBack(-d); else if(backAcc>0) backAcc=Math.max(0, backAcc-d);
-    }, {passive:true});
+      if(d>0 && !wrapping && !window.__curtainOn && !window.__vpOpen){
+        const capY=(F+(HRT_G()+HRT_SPAN)*(1-F))*(document.documentElement.scrollHeight-innerHeight);
+        if(gestY0<capY-4 && scrollY+d>capY){ e.preventDefault(); if(scrollY<capY) scrollTo(0,capY); }
+      }
+    }, {passive:false});
     let touchY=null;
     addEventListener('touchstart', e=>{ touchY=e.touches[0].clientY; }, {passive:true});
     addEventListener('touchmove', e=>{ if(touchY==null) return; const y=e.touches[0].clientY;
